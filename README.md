@@ -1,4 +1,4 @@
-DOMPromise
-==========
+DOMFuture
+=========
 
-DOM Promises IDL/polyfill
+DOM Future/Resolver IDL and polyfill.
