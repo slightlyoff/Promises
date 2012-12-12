@@ -113,7 +113,7 @@
 //    internal resolver reference in the Future implementation, either through
 //    the constructor argument or some other mechanism.
 //
-//    Futures return a new automatically-generated Future from each "then()
+//    Futures return a new automatically-generated Future from each "then()"
 //    call. The then()-generated Futures are resolved by the callbacks passed
 //    to each "then()" invocation. These functions are called based on the
 //    resolution and their return values are passed onward to the next
