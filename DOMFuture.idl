@@ -19,6 +19,8 @@
 //    * Provide examples of progress event subclassing
 //    * Provide examples of compatiblity shims for use with existing libraries
 //    * Finish example code
+//    * Do we need to specify value/error as something other than Object? Their
+//      intial values should be "undefined", after all.
 //
 //  Goals:
 //
