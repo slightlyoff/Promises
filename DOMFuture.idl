@@ -9,6 +9,7 @@
 //  TODOs:
 //
 //    * Working polyfill based on RSVP.js
+//    * Define callback interface between Resolver and Future
 //    * Determine how we're going to plan for "Future" type sniffing in an
 //      future where the language provides Future/Resolver types natively.  One
 //      option is to assume that the "then" method will be provided by the root
@@ -76,6 +77,11 @@
 //
 //      var r = new Resolver();
 //      var f = r.future;
+//
+//    Futures provide a way for others to be notified when the resolution
+//    occurs without handing them the ability to resolve the future itself.
+//    This is accomplished either by providing callbacks to the ".then()"
+//    method or by adding event handlers.
 //
 //  Processing model:
 //
@@ -149,14 +155,23 @@
 //          })
 //          .done();
 //
-//    Chaining fast-forwards un-handled values to the end of the chain. Like in
-//    RSVP.js, the "onerror" function passed to done() is called here,
-//    logging the exception:
+//    Chaining fast-forwards un-handled values to the next item in the chain
+//    which registers a handler for that particular disposition
+//    (accept/reject/cancel). As in RSVP.js, the "onerror" function passed to
+//    done() is called here, logging the exception:
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
 //          .then(onaccept) // "onaccept" is not called, and we fast-forward
 //          .done(null, console.error.bind(console));
+//
+//    If the second call were to handle "error", the final callback would not
+//    receive an "error" unless it also rejected its Future. e.g.:
+//
+//      doItAsync()
+//          .then(function(){ throw new Error("spurious!"); })
+//          .then(onaccept, console.error.bind(console)) // logs the error
+//          .done(null, console.error.bind(console));    // does nothing
 //
 //  Return Value Sniffing and value/error/cancel Chaining:
 //
@@ -167,7 +182,8 @@
 //
 //      * If the return is a Future, merge the generated Future's behavior
 //        with it.
-//      * If the callback throws, resolve the generated future with an Error
+//      * If the callback throws, reject() the generated future with the thrown
+//        value, even if the value is not an Error.
 //      * If the return value is any other kind, use it as the "value" for
 //        resolving the generated Future.
 //
@@ -265,13 +281,12 @@ module events {
     };
 
     // FIXME(slightlyoff):
-    //      * Require/provide the Resolver parameter to the ctor?
+    //      * Should the Resolver parameter to the ctor be mdandatory here?
     //      * Should this have a constructor? What does it mean to be able to
     //        new up a Future? Does passing the resolver connect them? How? It's
     //        not a leak of resolution capability if multiple promises are
     //        resolved by the same Resolver, but the order needs to be settled.
-    [Constructor,
-     Constructor(Resolver resolver)]
+    [Constructor(Resolver resolver)]
     interface Future : EventTarget {
         // Events
 
@@ -328,12 +343,10 @@ module events {
     interface Resolver {
 
         // "accept" and "reject" may be called *only once*, after
-        // which point they throw exceptions. Setters fire onoaccept or
-        // onreject on the owned future.
-
-        void accept(in Object value); // AlreadyResolved
-        void reject(in [Optional] Error error);
-        void cancel() raises(Error); // AlreadyCanceled || AlreadyResolved
+        // which point they throw exceptions.
+        void accept(in Object value)            raises(Error); // AlreadyResolved
+        void reject(in [Optional] Object error) raises(Error); // AlreadyResolved
+        void cancel()                           raises(Error); // AlreadyCanceled || AlreadyResolved
 
         attribute readonly FutureState state;
         attribute [readonly] Future future;
