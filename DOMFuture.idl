@@ -165,9 +165,9 @@
 //    then(). Below is the basic logic for then() callback return handling.
 //    Major features:
 //
-//      * If the return is a Future, merge the returned Future's behavior
+//      * If the return is a Future, merge the generated Future's behavior
 //        with it.
-//      * If the callback throws, resolve the returned future with an Error
+//      * If the callback throws, resolve the generated future with an Error
 //      * If the return value is any other kind, use it as the "value" for
 //        resolving the generated Future.
 //
