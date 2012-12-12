@@ -346,7 +346,7 @@ module events {
 
         // "accept" and "reject" may be called *only once*, after
         // which point they throw exceptions.
-        void accept(in Object value)            raises(Error); // AlreadyResolved
+        void accept(in [Optional] Object value) raises(Error); // AlreadyResolved
         void reject(in [Optional] Object error) raises(Error); // AlreadyResolved
         void cancel()                           raises(Error); // AlreadyCanceled || AlreadyResolved
 
