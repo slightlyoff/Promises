@@ -275,7 +275,7 @@ module events {
     interface Future : EventTarget {
         // Events
 
-        // We to notify observers we use the following DOM events which can be
+        // To notify observers we use the following DOM events which can be
         // registered through the usual mechanism:
         //
         //   accept
