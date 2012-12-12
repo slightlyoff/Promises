@@ -19,8 +19,6 @@
 //    * Provide examples of progress event subclassing
 //    * Provide examples of compatiblity shims for use with existing libraries
 //    * Finish example code
-//    * Do we need to specify value/error as something other than Object? Their
-//      intial values should be "undefined", after all.
 //
 //  Goals:
 //
@@ -320,9 +318,9 @@ module events {
         //   rejected      (cancelled == false && value == null && error != null)
         //   cancelled     (cancelled == true);
 
-        attribute readonly Object value;
-        attribute readonly Object error;
-        attribute readonly Boolean cancelled;
+        attribute readonly any         value;
+        attribute readonly any         error;
+        attribute readonly Boolean     cancelled;
         attribute readonly FutureState state;
 
         // Returns a Future whose completion value will be the return value
@@ -346,9 +344,9 @@ module events {
 
         // "accept" and "reject" may be called *only once*, after
         // which point they throw exceptions.
-        void accept(in [Optional] Object value) raises(Error); // AlreadyResolved
-        void reject(in [Optional] Object error) raises(Error); // AlreadyResolved
-        void cancel()                           raises(Error); // AlreadyCanceled || AlreadyResolved
+        void accept(in [Optional] any value) raises(Error); // AlreadyResolved
+        void reject(in [Optional] any error) raises(Error); // AlreadyResolved
+        void cancel()                        raises(Error); // AlreadyCanceled || AlreadyResolved
 
         attribute readonly FutureState state;
         attribute [readonly] Future future;
