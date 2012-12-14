@@ -320,18 +320,18 @@ module events {
 
         attribute readonly any         value;
         attribute readonly any         error;
-        attribute readonly Boolean     cancelled;
+        attribute readonly boolean     cancelled;
         attribute readonly FutureState state;
 
         // Returns a Future whose completion value will be the return value
         // from whichever of the callbacks is eventually invoked.
-        Future  then(in [Optional] Function onaccept,
-                     in [Optional] Function onreject,
-                     in [Optional] Function oncancel);
+        Future  then(optional EventHandler onaccept,
+                     optional EventHandler onreject,
+                     optional EventHandler oncancel);
 
-        void    done(in [Optional] Function onaccept,
-                     in [Optional] Function onreject,
-                     in [Optional] Function oncancel);
+        void    done(optional EventHandler onaccept,
+                     optional EventHandler onreject,
+                     optional EventHandler oncancel);
 
     };
 
@@ -344,8 +344,8 @@ module events {
 
         // "accept" and "reject" may be called *only once*, after
         // which point they throw exceptions.
-        void accept(in [Optional] any value) raises(Error); // AlreadyResolved
-        void reject(in [Optional] any error) raises(Error); // AlreadyResolved
+        void accept(optional any value) raises(Error); // AlreadyResolved
+        void reject(optional any error) raises(Error); // AlreadyResolved
         void cancel()                        raises(Error); // AlreadyCanceled || AlreadyResolved
 
         attribute readonly FutureState state;
