@@ -132,17 +132,17 @@
 //        return r.future;
 //      };
 //      doItAsync()
-//          .then(onaccept, onreject, oncancel)
-//          .then(onaccept)
-//          .done(onaccept);
+//          .then(onaccept, onreject)
+//          .then(onacceptIntermediate)
+//          .done(onacceptFinal);
 //
 //    This architecture gaurantees that resolution goes through a Resolver,
 //    meaning that the ability to resolve is not leaked by default (see below).
 //
 //    In a change from most Futures implementations, we automatically pass the
 //    generated resolver to callbacks, allowing them to use/return its future
-//    directly and to cancel, a feature which isn't available through the
-//    return-sniffing system:
+//    directly, a feature which isn't available through the return-sniffing
+//    system:
 //
 //      doItAsync()
 //          .then(function onaccept(value, nextResolver) {
@@ -156,9 +156,9 @@
 //          .done();
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
-//    which registers a handler for that particular disposition
-//    (accept/reject/cancel). As in RSVP.js, the "onerror" function passed to
-//    done() is called here, logging the exception:
+//    which registers a handler for that particular disposition (accept &
+//    reject). As in RSVP.js, the "onerror" function passed to done() is called
+//    here, logging the exception:
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
@@ -173,9 +173,9 @@
 //          .then(onaccept, console.error.bind(console)) // logs the error
 //          .done(null, console.error.bind(console));    // does nothing
 //
-//  Return Value Sniffing and value/error/cancel Chaining:
+//  Return Value Sniffing and value/error Chaining:
 //
-//    Like many other Future systems, the callbacks for accept/error/cancel
+//    Like many other Future systems, the callbacks for accept & error
 //    are used to resolve the auto-generated Future returned from a call to
 //    then(). Below is the basic logic for then() callback return handling.
 //    Major features:
@@ -189,7 +189,7 @@
 //
 //      e.g.:
 //
-//      Future.prototype.then = function(onaccept, onerror, oncancel) {
+//      Future.prototype.then = function(onaccept, onerror) {
 //
 //        var nextResolver = new Resolver();
 //
@@ -208,8 +208,7 @@
 //              // Merge the resolution of nextResolver with the returned
 //              // Future;
 //              ret.then(nextResolver.accept.bind(nextResolver),
-//                       nextResolver.reject.bind(nextResolver),
-//                       nextResolver.cancel.bind(nextResolver));
+//                       nextResolver.reject.bind(nextResolver));
 //            }
 //          } else {
 //            nextResolver.accept(ret);
@@ -225,6 +224,43 @@
 //
 //    1.) then() callbacks in the order of registration
 //    2.) dispatchEvent() handlers
+//
+//
+//  Cancelation and Timeouts:
+//
+//    A resolver's cancel() and timeout() methods are conveniences which de-
+//    sugar to:
+//
+//      Resolver.prototype.cancel = function() {
+//        // NOTE: DOMError() isn't currently new-able thanks to IDL-based lack
+//        // of construbtability, so the below is explanatory but not runnable
+//        // until that's fixed in the spec. *Le sigh*.
+//        var e = new DOMError();
+//        e.name = "Cancel";
+//        this.reject(e);
+//       };
+//
+//      Resolver.prototype.timeout = function() {
+//        var e = new DOMError();
+//        e.name = "Timeout";
+//        this.reject(e);
+//       };
+//
+//    To handle cancelation and timeouts, the rejection handler of a Future
+//    should detect these types by their "name" field:
+//
+//      f.then(onaccept, function(e) {
+//        switch (e.name) {
+//          "Cancel":  showCancledMessage(); break;
+//          "Timeout": showTimeoutMessage(); break;
+//          default:
+//            // Some other type of rejection, perhaps an unhandled low-level
+//            // exception.
+//            ...
+//            break;
+//        };
+//        releaseUIResources();
+//      });
 //
 //  Mutual suspicion:
 //
@@ -249,8 +285,40 @@
 //    a (hidden) protocol. As a result, we park *all* sensitive capabilities
 //    related to a Future in the Resolver that creates it.
 //
-//      // Vending a future to multiple
-//      FIXME(slightlyoff):
+//      ///////////////////////////////////////////////////////////////////////
+//      // firstparty.js
+//      ///////////////////////////////////////////////////////////////////////
+//      // Vending a future to multiple users does not leak capabilities
+//      function doWorkAsync() {
+//        var r = new Resolver();
+//        // ...
+//        return r.future;
+//      }
+//
+//      function doWorkAsyncAndLog() {
+//        // As a first party, register to know about what happens.
+//        var f = doWorkAsync();
+//
+//        // If we want to expose the results of logging, we could
+//        // instead do:
+//        //   return f.then(logIt, logIt);
+//        // But this example shows a single Future vended to multiple users.
+//        f.done(logIt, logIt);
+//
+//        return f;
+//      }
+//
+//
+//      ///////////////////////////////////////////////////////////////////////
+//      // thirdparty.js
+//      ///////////////////////////////////////////////////////////////////////
+//      // A third party should not be able to observe previously
+//      // registered handlers, remove them, or affect resolution.
+
+//      doWorkAsyncAndLog().then(secondHandler, secondErrorHandler);
+//      // Note that from the returned future, we cannot cancel or in any other
+//      // way resolve, only add handlers to react to the eventual disposition
+//      // of the Future
 //
 //  Errors and Exceptions:
 //
@@ -262,93 +330,84 @@
 //
 //    What is clear is that no matter what approach is pursued, integration
 //    with developer tooling is key. Developer consoles SHOULD log un-caught
-//    errors from future chains. That is to say, if r.then(onresponse); this
-//    should throw an exception in onresponse,
+//    errors from future chains. That is to say, if future.done(onresponse); is
+//    the only handler given for a resolver which is eventually rejected,
+//    developer tools should log the unhandled error.
 //
 //  Example use:
 //
 
 module events {
+  // Futures begin in the "pending" state and progress to other
+  // states. Once moved from the "pending" state, they may never be
+  // returned to it.
+  enum FutureState {
+    "pending",
+    "accepted",
+    "rejected"
+  };
 
-    // Futures begin in the "pending" state and progress to other
-    // states. Once moved from the "pending" state, they may never be
-    // returned to it.
-    enum FutureState {
-      "pending",
-      "accepted",
-      "rejected",
-      "cancelled"
-    };
+  // FIXME(slightlyoff):
+  //      * Should the Resolver parameter to the ctor be mdandatory here?
+  //      * Should this have a constructor? What does it mean to be able to
+  //        new up a Future? Does passing the resolver connect them? How? It's
+  //        not a leak of resolution capability if multiple promises are
+  //        resolved by the same Resolver, but the order needs to be settled.
+  [Constructor(Resolver resolver)]
+  interface Future : EventTarget {
+    // Events
 
-    // FIXME(slightlyoff):
-    //      * Should the Resolver parameter to the ctor be mdandatory here?
-    //      * Should this have a constructor? What does it mean to be able to
-    //        new up a Future? Does passing the resolver connect them? How? It's
-    //        not a leak of resolution capability if multiple promises are
-    //        resolved by the same Resolver, but the order needs to be settled.
-    [Constructor(Resolver resolver)]
-    interface Future : EventTarget {
-        // Events
+    // To notify observers we use the following DOM events which can be
+    // registered through the usual mechanism:
+    //
+    //   accept
+    //     Bubbles: No
+    //     Cancelable: No
+    //     Context Info: value
+    //
+    //   reject
+    //     Bubbles: No
+    //     Cancelable: No
+    //     Context Info: error
+    //
+    // Each of these events may be dispatched *only once*
 
-        // To notify observers we use the following DOM events which can be
-        // registered through the usual mechanism:
-        //
-        //   accept
-        //     Bubbles: No
-        //     Cancelable: No
-        //     Context Info: value
-        //
-        //   cancel
-        //     Bubbles: No
-        //     Cancelable: No
-        //     Context Info:
-        //
-        //   reject
-        //     Bubbles: No
-        //     Cancelable: No
-        //     Context Info: error
-        //
-        // Each of these events may be dispatched *only once*
+    // markm points out that we need to be able to distinuish between all
+    // available states:
+    //
+    //   pending       (value == null && error == null)
+    //   accepted      (value != null)
+    //   rejected      (value == null && error != null)
 
-        // markm points out that we need to be able to distinuish between all
-        // available states:
-        //
-        //   pending       (cancelled == false && value == null && error == null)
-        //   accepted      (cancelled == false && value != null)
-        //   rejected      (cancelled == false && value == null && error != null)
-        //   cancelled     (cancelled == true);
+    attribute readonly any         value;
+    attribute readonly any         error;
+    attribute readonly boolean     rejected;
+    attribute readonly FutureState state;
 
-        attribute readonly any         value;
-        attribute readonly any         error;
-        attribute readonly boolean     cancelled;
-        attribute readonly FutureState state;
+    // Returns a Future whose completion value will be the return value
+    // from whichever of the callbacks is eventually invoked.
+    Future  then(optional EventHandler onaccept,
+                 optional EventHandler onreject);
 
-        // Returns a Future whose completion value will be the return value
-        // from whichever of the callbacks is eventually invoked.
-        Future  then(optional EventHandler onaccept,
-                     optional EventHandler onreject,
-                     optional EventHandler oncancel);
+    void    done(optional EventHandler onaccept,
+                 optional EventHandler onreject);
+  };
 
-        void    done(optional EventHandler onaccept,
-                     optional EventHandler onreject,
-                     optional EventHandler oncancel);
+  // FIXME(slightlyoff):
+  //      * Allow an optional value/error param for automatic resoluton, i.e.
+  //        MSFT's "as"? Or allow an "init" function as in MSFT's Promise
+  //        library?
+  [Constructor]
+  interface Resolver {
 
-    };
+    // "accept" and "reject" may be called *only once*, after
+    // which point they throw exceptions.
+    void accept(optional any value) raises(Error); // AlreadyResolved
+    void reject(optional any error) raises(Error); // AlreadyResolved
+    void cancel()                   raises(Error); // AlreadyResolved
+    void timeout()                  raises(Error); // AlreadyResolved
 
-    // FIXME(slightlyoff):
-    //      * Allow an optional value/error param for automatic resoluton, i.e.
-    //        MSFT's "as"? Or allow an "init" function as in MSFT's Promise
-    //        library?
-    [Constructor]
-    interface Resolver {
-
-        // "accept" and "reject" may be called *only once*, after
-        // which point they throw exceptions.
-        void accept(optional any value) raises(Error); // AlreadyResolved
-        void reject(optional any error) raises(Error); // AlreadyResolved
-        void cancel()                        raises(Error); // AlreadyCanceled || AlreadyResolved
-
-        attribute readonly FutureState state;
-        attribute [readonly] Future future;
-    };
+    attribute readonly FutureState state;
+    attribute [readonly] Future future;
+  };
 };
