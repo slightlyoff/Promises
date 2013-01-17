@@ -340,7 +340,7 @@
 module events {
   // Futures begin in the "pending" state and progress to other
   // states. Once moved from the "pending" state, they may never be
-  // returned to it.
+  // returned to it. The states are exclusive.
   enum FutureState {
     "pending",
     "accepted",
@@ -371,13 +371,6 @@ module events {
     //     Context Info: error
     //
     // Each of these events may be dispatched *only once*
-
-    // markm points out that we need to be able to distinuish between all
-    // available states:
-    //
-    //   pending       (value == null && error == null)
-    //   accepted      (value != null)
-    //   rejected      (value == null && error != null)
 
     attribute readonly any         value;
     attribute readonly any         error;
