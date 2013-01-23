@@ -59,13 +59,13 @@
 //    used to resolve the Future.
 //
 //      function doAsyncWork() {
-//        var accept, reject;
+//        var callbacks;
 //        // Capture the future's accept and reject in the above variables.
-//        var f = new Future(function(a, r) { accept = a; reject = r; });
+//        var f = new Future(function(c) { callbacks = c; });
 //
 //        setTimeout(function() { // ...time passes
 //          // Do work here
-//          accept("success");
+//          callbacks.accept("success");
 //        }, 100);
 //
 //        return f;
@@ -88,14 +88,14 @@
 //    in the next turn or microtask, is allowed, but all implementations MUST
 //    demonstrate the following behavior:
 //
-//      var accept, reject;
-//      var f = new Future(function(a, r) { accept = a; reject = r; });
+//      var callbacks;
+//      var f = new Future(function(c) { callbacks = c; });
 //      assertTrue(f.state == "pending");
-//      accept(null);
+//      callbacks.accept(null);
 //      assertTrue(f.state == "pending");
 //
 //      try {
-//        accept(null);
+//        callbacks.accept(null);
 //        // Not reached
 //        assertTrue(false);
 //      } catch(e) {
@@ -117,8 +117,8 @@
 //
 //      // Example invocation
 //      var doItAsync = function() {
-//        var accept, reject;
-//        var f = new Future(function(a, r) { accept = a; reject = r; });
+//        var callbacks;
+//        var f = new Future(function(c) { callbacks = c; });
 //        // ...
 //        return f;
 //      };
@@ -200,12 +200,16 @@ module events {
     "rejected"
   };
 
-  callback AcceptCallback = void(any value);
-  callback RejectCallback = void(any reason);
+  interface ResovlerCallbacks {
+    void accept(optional any value) raises(Error); // AlreadyResolved
+    void reject(optional any error) raises(Error); // AlreadyResolved
+    void cancel()                   raises(Error); // AlreadyResolved
+    void timeout()                  raises(Error); // AlreadyResolved
+  };
+
   // FIXME(slighltyoff): add positional params for timeout and cancel? A dict
   // for side-contract methods like these?
-  callback InitCallback = void (optional AcceptCallback accept,
-                                optional RejectCallback reject);
+  callback InitCallback = void (ResolverCallbacks callbacks);
 
   [Constructor(InitCallback init)]
   interface Future : EventTarget {
