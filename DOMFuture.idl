@@ -6,20 +6,6 @@
 // Design Notes
 // ============
 //
-//  TODOs:
-//
-//    * Working polyfill based on RSVP.js
-//    * Define callback interface between Resolver and Future
-//    * Determine how we're going to plan for "Future" type sniffing in an
-//      future where the language provides Future/Resolver types natively.  One
-//      option is to assume that the "then" method will be provided by the root
-//      of the type hierarchy and it we will re-define DOM's Future/Resolver
-//      types as subclasses.
-//    * Should "Future" and "Resolver" be named "DOMFuture" and "DOMResolver"?
-//    * Provide examples of progress event subclassing
-//    * Provide examples of compatiblity shims for use with existing libraries
-//    * Finish example code
-//
 //  Goals:
 //
 //    This design for a DOM-compatible Future (nee, "Promise") type aims to be
@@ -33,10 +19,6 @@
 //    We identify the following features as required:
 //
 //      * Chaining of .then() calls
-//      * Separation of Resolver (who may vend Futures) and Future
-//        implementation, creating the ability for a Resolver to safely hand a
-//        Future to multiple clients whom it does not trust and may not
-//        interfere with each other.
 //      * Event-friendlyness. As this is a DOM API, it must be possible to
 //        register callbacks using the DOM's event mechanism.
 //
@@ -71,12 +53,26 @@
 //    future, and provide a uniform API for interacting with individual events,
 //    chains of events, and error handling for those events.
 //
-//    Futures are bound to Resolvers and created as properties of Resolver
-//    instances. To create a new Future, you create a resolver and extract the
-//    future from it:
+//    Futures take an initialization function as their only parameter. This
+//    function is called back synchronously (by the time construction finishes)
+//    with references to the the accept and reject functions that can later be
+//    used to resolve the Future.
 //
-//      var r = new Resolver();
-//      var f = r.future;
+//      function doAsyncWork() {
+//        var callbacks;
+//        // Capture the future's accept and reject in the above variables.
+//        var f = new Future(function(c) { callbacks = c; });
+//
+//        setTimeout(function() { // ...time passes
+//          // Do work here
+//          callbacks.accept("success");
+//        }, 100);
+//
+//        return f;
+//      }
+//
+//      // Callsers of function can be notified of resolution easily:
+//      doAsyncWork().then(console.log.bind(console));
 //
 //    Futures provide a way for others to be notified when the resolution
 //    occurs without handing them the ability to resolve the future itself.
@@ -85,23 +81,21 @@
 //
 //  Processing model:
 //
-//    The delivery of any resolution or error MUST BE "apparently
+//    the delivery of any resolution or error must be "apparently
 //    asynchronous", specifically they must be delayed at least to the "end of
-//    microtask" as defined for the delivery of Mutation Observer and
-//    Object.observe() notifications. Delivery at any point beyond that, e.g.
-//    in the next turn or microtask, is allowed, but all implementations MUST
+//    microtask" as defined for the delivery of mutation observer and
+//    object.observe() notifications. delivery at any point beyond that, e.g.
+//    in the next turn or microtask, is allowed, but all implementations must
 //    demonstrate the following behavior:
 //
-//      var r = new Resolver();
-//      assertTrue(r.state == "pending");
-//      assertTrue(r.future.state == "pending");
-//
-//      r.accept(null);
-//      assertTrue(r.state == "accepted");
-//      assertTrue(r.future.state == "pending");
+//      var callbacks;
+//      var f = new Future(function(c) { callbacks = c; });
+//      assertTrue(f.state == "pending");
+//      callbacks.accept(null);
+//      assertTrue(f.state == "pending");
 //
 //      try {
-//        r.accept(null);
+//        callbacks.accept(null);
 //        // Not reached
 //        assertTrue(false);
 //      } catch(e) {
@@ -115,10 +109,6 @@
 //    ".then()" and receive a sensible result from which you can ".then()"
 //    again.
 //
-//    This is accomplished in the design below through the setting of an
-//    internal resolver reference in the Future implementation, either through
-//    the constructor argument or some other mechanism.
-//
 //    Futures return a new automatically-generated Future from each "then()"
 //    call. The then()-generated Futures are resolved by the callbacks passed
 //    to each "then()" invocation. These functions are called based on the
@@ -127,33 +117,15 @@
 //
 //      // Example invocation
 //      var doItAsync = function() {
-//        var r = new Resolver();
+//        var callbacks;
+//        var f = new Future(function(c) { callbacks = c; });
 //        // ...
-//        return r.future;
+//        return f;
 //      };
 //      doItAsync()
 //          .then(onaccept, onreject)
 //          .then(onacceptIntermediate)
 //          .done(onacceptFinal);
-//
-//    This architecture gaurantees that resolution goes through a Resolver,
-//    meaning that the ability to resolve is not leaked by default (see below).
-//
-//    In a change from most Futures implementations, we automatically pass the
-//    generated resolver to callbacks, allowing them to use/return its future
-//    directly, a feature which isn't available through the return-sniffing
-//    system:
-//
-//      doItAsync()
-//          .then(function onaccept(value, nextResolver) {
-//            // To chain async behavior, we simply operate with the passed
-//            // resolver...
-//            setTimeout(nextResolver.accept.bind(nextResolver, "accepted!"), 100);
-//
-//            // ...and return its future
-//            return nextResolver.future;
-//          })
-//          .done();
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
 //    which registers a handler for that particular disposition (accept &
@@ -187,138 +159,18 @@
 //      * If the return value is any other kind, use it as the "value" for
 //        resolving the generated Future.
 //
-//      e.g.:
-//
-//      Future.prototype.then = function(onaccept, onerror) {
-//
-//        var nextResolver = new Resolver();
-//
-//        // _onResolution is only for illustration
-//        this._onResolution(function(value) {
-//          var ret;
-//          try {
-//            ret = onaccept(value, nextResolver);
-//          } catch (e) {
-//            nextResolver.reject(e);
-//            return nextResolver.future;
-//          }
-//
-//          if (ret instanceof Future) {
-//            if (ret !== nextResovler.future)
-//              // Merge the resolution of nextResolver with the returned
-//              // Future;
-//              ret.then(nextResolver.accept.bind(nextResolver),
-//                       nextResolver.reject.bind(nextResolver));
-//            }
-//          } else {
-//            nextResolver.accept(ret);
-//          }
-//        });
-//
-//        // error and cancellation handling omitted for space
-//
-//        return nextResolver.future;
-//      };
+//    TODO(slightlyoff): updated example logic
 //
 //  Delivery order:
 //
 //    1.) then() callbacks in the order of registration
 //    2.) dispatchEvent() handlers
 //
-//
 //  Cancelation and Timeouts:
 //
-//    A resolver's cancel() and timeout() methods are conveniences which de-
-//    sugar to:
-//
-//      Resolver.prototype.cancel = function() {
-//        // NOTE: DOMError() isn't currently new-able thanks to IDL-based lack
-//        // of construbtability, so the below is explanatory but not runnable
-//        // until that's fixed in the spec. *Le sigh*.
-//        var e = new DOMError();
-//        e.name = "Cancel";
-//        this.reject(e);
-//       };
-//
-//      Resolver.prototype.timeout = function() {
-//        var e = new DOMError();
-//        e.name = "Timeout";
-//        this.reject(e);
-//       };
-//
-//    To handle cancelation and timeouts, the rejection handler of a Future
-//    should detect these types by their "name" field:
-//
-//      f.then(onaccept, function(e) {
-//        switch (e.name) {
-//          "Cancel":  showCancledMessage(); break;
-//          "Timeout": showTimeoutMessage(); break;
-//          default:
-//            // Some other type of rejection, perhaps an unhandled low-level
-//            // exception.
-//            ...
-//            break;
-//        };
-//        releaseUIResources();
-//      });
-//
-//  Mutual suspicion:
-//
-//    Futures abstract (partially or fully) over the following capabilties:
-//
-//      * The ability to resolve the future
-//      * The ability to register to be notified of the resolution
-//
-//    As with all systems that try to enforce mutual suspicion under the roof
-//    of a single heap, designing to vend these capabilities via object
-//    identity ("OCAP") is deeply fraught and when relied on in lieu of the
-//    clunkier token-based capabilties systems, systems become predictably
-//    brittle. Security boundaries remain difficult to reason about as *any*
-//    function boundary may have equally large (and catastrophic) security
-//    implications. Throwing the "this is a security-sensitive API!" flag is
-//    much harder to do in the API design phase when simple value passing and
-//    return are hijacked to perhaps mean "capability leaking".
-//
-//    Despite the risks in OCAP, we expect that DOM Futures will be used with
-//    Structured Clone and will be "sendable", so it make sense to treat the
-//    Resolver/Future reference relationship as something that can be split by
-//    a (hidden) protocol. As a result, we park *all* sensitive capabilities
-//    related to a Future in the Resolver that creates it.
-//
-//      ///////////////////////////////////////////////////////////////////////
-//      // firstparty.js
-//      ///////////////////////////////////////////////////////////////////////
-//      // Vending a future to multiple users does not leak capabilities
-//      function doWorkAsync() {
-//        var r = new Resolver();
-//        // ...
-//        return r.future;
-//      }
-//
-//      function doWorkAsyncAndLog() {
-//        // As a first party, register to know about what happens.
-//        var f = doWorkAsync();
-//
-//        // If we want to expose the results of logging, we could
-//        // instead do:
-//        //   return f.then(logIt, logIt);
-//        // But this example shows a single Future vended to multiple users.
-//        f.done(logIt, logIt);
-//
-//        return f;
-//      }
-//
-//
-//      ///////////////////////////////////////////////////////////////////////
-//      // thirdparty.js
-//      ///////////////////////////////////////////////////////////////////////
-//      // A third party should not be able to observe previously
-//      // registered handlers, remove them, or affect resolution.
-
-//      doWorkAsyncAndLog().then(secondHandler, secondErrorHandler);
-//      // Note that from the returned future, we cannot cancel or in any other
-//      // way resolve, only add handlers to react to the eventual disposition
-//      // of the Future
+//    FIXME(slightlyoff): we've lost these in this design. I feel we should
+//    either add more positional param to cover it or switch the callbacks to
+//    handle property bag (perhaps as the 3rd arg?)
 //
 //  Errors and Exceptions:
 //
@@ -336,6 +188,7 @@
 //
 //  Example use:
 //
+//    FIXME(slightlyoff)
 
 module events {
   // Futures begin in the "pending" state and progress to other
@@ -347,13 +200,18 @@ module events {
     "rejected"
   };
 
-  // FIXME(slightlyoff):
-  //      * Should the Resolver parameter to the ctor be mdandatory here?
-  //      * Should this have a constructor? What does it mean to be able to
-  //        new up a Future? Does passing the resolver connect them? How? It's
-  //        not a leak of resolution capability if multiple promises are
-  //        resolved by the same Resolver, but the order needs to be settled.
-  [Constructor(Resolver resolver)]
+  interface ResovlerCallbacks {
+    void accept(optional any value) raises(Error); // AlreadyResolved
+    void reject(optional any error) raises(Error); // AlreadyResolved
+    void cancel()                   raises(Error); // AlreadyResolved
+    void timeout()                  raises(Error); // AlreadyResolved
+  };
+
+  // FIXME(slighltyoff): add positional params for timeout and cancel? A dict
+  // for side-contract methods like these?
+  callback InitCallback = void (ResolverCallbacks callbacks);
+
+  [Constructor(InitCallback init)]
   interface Future : EventTarget {
     // Events
 
@@ -384,23 +242,5 @@ module events {
 
     void    done(optional EventHandler onaccept,
                  optional EventHandler onreject);
-  };
-
-  // FIXME(slightlyoff):
-  //      * Allow an optional value/error param for automatic resoluton, i.e.
-  //        MSFT's "as"? Or allow an "init" function as in MSFT's Promise
-  //        library?
-  [Constructor]
-  interface Resolver {
-
-    // "accept" and "reject" may be called *only once*, after
-    // which point they throw exceptions.
-    void accept(optional any value) raises(Error); // AlreadyResolved
-    void reject(optional any error) raises(Error); // AlreadyResolved
-    void cancel()                   raises(Error); // AlreadyResolved
-    void timeout()                  raises(Error); // AlreadyResolved
-
-    attribute readonly FutureState state;
-    attribute [readonly] Future future;
   };
 };
