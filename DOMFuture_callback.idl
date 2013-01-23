@@ -81,11 +81,11 @@
 //
 //  Processing model:
 //
-//    The delivery of any resolution or error MUST BE "apparently
+//    the delivery of any resolution or error must be "apparently
 //    asynchronous", specifically they must be delayed at least to the "end of
-//    microtask" as defined for the delivery of Mutation Observer and
-//    Object.observe() notifications. Delivery at any point beyond that, e.g.
-//    in the next turn or microtask, is allowed, but all implementations MUST
+//    microtask" as defined for the delivery of mutation observer and
+//    object.observe() notifications. delivery at any point beyond that, e.g.
+//    in the next turn or microtask, is allowed, but all implementations must
 //    demonstrate the following behavior:
 //
 //      var callbacks;
