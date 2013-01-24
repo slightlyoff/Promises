@@ -168,9 +168,34 @@
 //
 //  Cancelation and Timeouts:
 //
-//    FIXME(slightlyoff): we've lost these in this design. I feel we should
-//    either add more positional param to cover it or switch the callbacks to
-//    handle property bag (perhaps as the 3rd arg?)
+//    The passed set of callbacks includes cancel() and timeout() functions.
+//    These are syntactic sugar that generate Error objects with known name
+//    values ("Cancel" and "Timeout", respectively). Handling these values is
+//    done through the usual reject handler of a Future. Using only accept() and
+//    reject() we can re-create these sugar functions easily:
+//
+//      var callbacks;
+//      var f = new Future(function(c) { callbacks = c; });
+//      // Compatible, ad-hoc versions of cancel() and timeout()
+//      var cancel = function() { callbacks.reject(new Error("Cancel")); };
+//      var timeout = function() { callbacks.reject(new Error("Timeout")); };
+//
+//      // Register a reject handler that understands cancelation and timeout:
+//      f.then(onaccept, function(reason) {
+//        switch(reason.name) {
+//          case "Cancel":
+//            // handle cancelation...
+//            break;
+//          case "Timeout":
+//            // ...
+//            break;
+//          default:
+//            break;
+//        }
+//      });
+//
+//    Calling either the ad-hoc cancel() or callbacks.cancel() will have the
+//    same effect.
 //
 //  Errors and Exceptions:
 //
