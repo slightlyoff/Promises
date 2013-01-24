@@ -55,20 +55,16 @@
 //
 //    Futures take an initialization function as their only parameter. This
 //    function is called back synchronously (by the time construction finishes)
-//    with references to the the accept and reject functions that can later be
+//    with references to the the resolve and reject functions that can later be
 //    used to resolve the Future.
 //
 //      function doAsyncWork() {
-//        var callbacks;
-//        // Capture the future's accept and reject in the above variables.
-//        var f = new Future(function(c) { callbacks = c; });
-//
-//        setTimeout(function() { // ...time passes
-//          // Do work here
-//          callbacks.accept("success");
-//        }, 100);
-//
-//        return f;
+//        return new Future(function(r) {
+//          setTimeout(function() { // ...time passes
+//            // Do work here
+//            r.accept("success");
+//          }, 100);
+//        });
 //      }
 //
 //      // Callsers of function can be notified of resolution easily:
