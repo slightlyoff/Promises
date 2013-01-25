@@ -83,16 +83,12 @@ interface IDBVersionChangeEvent : Event {
  **/
 Window implements IDBEnvironment;
 
-
 WorkerUtils implements IDBEnvironment;
-
 
 [NoInterfaceObject]
 interface IDBEnvironment {
     readonly attribute IDBFactory indexedDB;
 };
-
-
 
 interface IDBFactory {
     IDBOpenDBRequest open (DOMString name, [EnforceRange] optional unsigned long long version);
@@ -143,7 +139,6 @@ interface IDBObjectStore {
 };
 
 
-
 /**************************************
  * 3.2.6
  **/
@@ -159,7 +154,6 @@ interface IDBIndex {
     IDBRequest getKey (any key);
     IDBRequest count (optional any key);
 };
-
 
 
 /**************************************
@@ -199,26 +193,21 @@ interface IDBTransaction : EventTarget {
 };
 
 
-
 /**************************************
  * 3.3.1
  **/
 WorkerUtils implements IDBEnvironmentSync;
-
 
 [NoInterfaceObject]
 interface IDBEnvironmentSync {
     readonly attribute IDBFactorySync indexedDBSync;
 };
 
-
-
 interface IDBFactorySync {
     IDBDatabaseSync open (DOMString name, [EnforceRange] optional unsigned long long version, optional IDBVersionChangeCallback upgradeCallback, optional unsigned long timeout);
     void            deleteDatabase (DOMString name);
     short           cmp (any first, any second);
 };
-
 
 
 /**************************************
@@ -234,14 +223,10 @@ interface IDBDatabaseSync {
     void               close ();
 };
 
-
-
 [NoInterfaceObject, Callback]
 interface IDBTransactionCallback {
     void transactionStarted (IDBTransactionSync transaction);
 };
-
-
 
 [NoInterfaceObject, Callback]
 interface IDBVersionChangeCallback {
