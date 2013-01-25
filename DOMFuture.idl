@@ -14,7 +14,7 @@
 //
 //    It also aims to enable end-users (non-spec authors) to build systems
 //    using these types directly without appealing to libraries or DOM magic
-//    for creating/resolving Futures.
+//    for creating/fulfilling Futures.
 //
 //    We identify the following features as required:
 //
@@ -67,7 +67,7 @@
 //        });
 //      }
 //
-//      // Callsers of function can be notified of resolution easily:
+//      // Callers of the function can be notified of resolution easily:
 //      doAsyncWork().then(console.log.bind(console));
 //
 //    Futures provide a way for others to be notified when the resolution
@@ -198,7 +198,7 @@
 //    As seen in the example code above, exceptions throw by callback handlers
 //    are caught by the system. This leads to some particular debugging hazards
 //    which other systems have treated in various ways. Some have opted simply
-//    not to swallow errors. Some propigate errors in various ways (this design
+//    not to swallow errors. Some propagate errors in various ways (this design
 //    employs a variant of that approach).
 //
 //    What is clear is that no matter what approach is pursued, integration
@@ -256,7 +256,7 @@ module events {
     attribute readonly boolean     rejected;
     attribute readonly FutureState state;
 
-    // Returns a Future whose completion value will be the return value
+    // Returns a Future whose fulfillment value will be the return value
     // from whichever of the callbacks is eventually invoked.
     Future  then(optional EventHandler onaccept,
                  optional EventHandler onreject);
