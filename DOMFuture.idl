@@ -159,8 +159,33 @@
 //
 //  Delivery order:
 //
-//    1.) then() callbacks in the order of registration
-//    2.) dispatchEvent() handlers
+//    1.) Resolution
+//      1.1) then() callbacks in the order of registration
+//      1.2) dispatchEvent() handlers
+//    2.) Post-resolution
+//      2.1) then() callbacks added after initial dispatch phase ends
+//
+//    2.1 provides for a Future to have then() callbacks added after it is
+//    resolved, allowing programmers to treat a Future object as something which
+//    is safe to call .then() on at all times. For example, both calls to then()
+//    in the following example will succeed and both callbacks will receive the
+//    resolution value, albiet at different times:
+//
+//      var callbacks;
+//      var f = new Future(function(c) { callbacks = c; });
+//      setTimeout(callbacks.accept.bind(callbacks, "Success!"), 1);
+//      f.then(function(value) {
+//        // Just to illuminate the timing, we make sure that our next then()
+//        // call occurs well outside the current turn.
+//        setTimeout(function() {
+//          f.then(console.log.bind(console));
+//        }, 1);
+//      });
+//
+//    We observe that the second then()-added callback *DOES* log to the
+//    console, but well after the initial resolution. All conforming
+//    implementations MUST provide the ability for post-resolution then() calls
+//    to resolve this way.
 //
 //  Cancelation and Timeouts:
 //
@@ -228,8 +253,6 @@ module events {
     void timeout()                  raises(Error); // AlreadyResolved
   };
 
-  // FIXME(slighltyoff): add positional params for timeout and cancel? A dict
-  // for side-contract methods like these?
   callback InitCallback = void (ResolverCallbacks callbacks);
 
   [Constructor(InitCallback init)]
