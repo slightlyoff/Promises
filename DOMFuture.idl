@@ -284,6 +284,19 @@ module events {
     Future  then(optional EventHandler onaccept,
                  optional EventHandler onreject);
 
+    // FIXME(slightlyoff):
+    //  we don't have an extension point in the then() scheme that mirrors the
+    //  way we allow extension via the callbacks object in the Future
+    //  constructor. This turns into a big problem for DOM APIs that need to be
+    //  retrofitted to enable additional semantics and callbacks for them in a
+    //  natrual way.
+    //
+    // Future then(required any callbacks);
+    //        .then({ accept: function(v) { ... },
+    //                reject: function(e) { ... },
+    //                ...
+    //        })
+
     void    done(optional EventHandler onaccept,
                  optional EventHandler onreject);
   };
