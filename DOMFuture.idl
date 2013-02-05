@@ -246,7 +246,7 @@ module events {
     "rejected"
   };
 
-  interface ResovlerCallbacks {
+  interface ResolverCallbacks {
     void accept(optional any value) raises(Error); // AlreadyResolved
     void reject(optional any error) raises(Error); // AlreadyResolved
     void cancel()                   raises(Error); // AlreadyResolved
