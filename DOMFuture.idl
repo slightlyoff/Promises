@@ -246,7 +246,7 @@ module events {
     "rejected"
   };
 
-  interface ResovlerCallbacks {
+  interface ResolverCallbacks {
     void accept(optional any value) raises(Error); // AlreadyResolved
     void reject(optional any error) raises(Error); // AlreadyResolved
     void cancel()                   raises(Error); // AlreadyResolved
@@ -272,7 +272,10 @@ module events {
     //     Cancelable: No
     //     Context Info: error
     //
-    // Each of these events may be dispatched *only once*
+    // Each of these events may be dispatched *only once*.
+    //
+    // Additionally, since a future's state should not be modifiable by
+    // consumers, any attempt to use dispatchEvent must throw an error.
 
     attribute readonly any         value;
     attribute readonly any         error;
