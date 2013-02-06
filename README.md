@@ -1,4 +1,4 @@
 DOMFuture
 =========
 
-DOM Future/Resolver IDL and polyfill.
+DOM Future Design (currently IDL), re-worked APIs in this style, and polyfills.
