@@ -256,26 +256,7 @@ module events {
   callback InitCallback = void (ResolverCallbacks callbacks);
 
   [Constructor(InitCallback init)]
-  interface Future : EventTarget {
-    // Events
-
-    // To notify observers we use the following DOM events which can be
-    // registered through the usual mechanism:
-    //
-    //   accept
-    //     Bubbles: No
-    //     Cancelable: No
-    //     Context Info: value
-    //
-    //   reject
-    //     Bubbles: No
-    //     Cancelable: No
-    //     Context Info: error
-    //
-    // Each of these events may be dispatched *only once*.
-    //
-    // Additionally, since a future's state should not be modifiable by
-    // consumers, any attempt to use dispatchEvent must throw an error.
+  interface Future {
 
     attribute readonly any         value;
     attribute readonly any         error;
