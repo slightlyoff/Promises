@@ -286,6 +286,7 @@ module events {
     // from whichever of the callbacks is eventually invoked.
     Future  then(optional EventHandler onaccept,
                  optional EventHandler onreject);
+    Future  catch(EventHandler onreject);
 
     // FIXME(slightlyoff):
     //  we don't have an extension point in the then() scheme that mirrors the
