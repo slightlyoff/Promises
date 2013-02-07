@@ -279,7 +279,6 @@ module events {
 
     attribute readonly any         value;
     attribute readonly any         error;
-    attribute readonly boolean     rejected;
     attribute readonly FutureState state;
 
     // Returns a Future whose fulfillment value will be the return value
