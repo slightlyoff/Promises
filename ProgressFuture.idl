@@ -1,0 +1,45 @@
+/*
+ * Copyright (C) 2012 Google Inc. All rights reserved.
+ */
+
+//
+// Design Notes
+// ============
+//
+//  This is a subclass of DOM Future which adds support for progress events and
+//  callbacks.
+//
+// Usage
+// =====
+//
+//  doItAsyncWithProgress(...).
+//    progress(function(progressValue) { ... }).
+//    then(onaccept, onreject);
+//
+//  // or, using the event style:
+//
+//  var f = doItAsyncWithProgress(...).done(onaccept, onreject);
+//  f.onprogress = function(progressEvent) {
+//    var progressValue = progressEvent.value;
+//    ...
+//  };
+
+module events {
+  interface ProgressResolverCallbacks extends ResolverCallbacks {
+    void progress(optional any progressValue);
+  };
+
+  callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
+
+  [Constructor(ProgressInitCallback init)]
+  interface ProgressFuture : Future {
+    // Additional events
+    //
+    //   progress
+    //     Bubbles: No
+    //     Cancelable: No
+    //     Context Info: value
+    // Returns the Future from which it was called ("this").
+    Future  progress(optional EventHandler onprogress);
+  };
+};
