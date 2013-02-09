@@ -52,9 +52,9 @@ interface Key {
 /**************************************
  * 12
  **/
-interface CryptoOperation : Future {
-  Future process(ArrayBufferView buffer);
-  Future finish();
+interface CryptoOperation : DOMFuture {
+  DOMFuture process(ArrayBufferView buffer);
+  DOMFuture finish();
   void abort();
 
   readonly attribute Key? key;
@@ -68,7 +68,7 @@ interface CryptoOperation : Future {
 /**************************************
  * 13
  *
- *  REMOVED: supplanted by Future
+ *  REMOVED: supplanted by DOMFuture
  **/
 
 /**************************************
@@ -103,22 +103,24 @@ interface Crypto {
                          optional ArrayBufferView? buffer = null);
 
   // TBD: ISSUE-36
-  Future generateKey(AlgorithmIdentifier algorithm,
-                     bool extractable = false,
-                     KeyUsage[] keyUsages = []);
-  Future deriveKey(AlgorithmIdentifier algorithm,
-                   Key baseKey,
-                   AlgorithmIdentifier? derivedKeyType,
-                   bool extractable = false,
-                   KeyUsage[] keyUsages = []);
+  DOMFuture generateKey(AlgorithmIdentifier algorithm,
+                      bool extractable = false,
+                      KeyUsage[] keyUsages = []);
+
+  DOMFuture deriveKey(AlgorithmIdentifier algorithm,
+                      Key baseKey,
+                      AlgorithmIdentifier? derivedKeyType,
+                      bool extractable = false,
+                      KeyUsage[] keyUsages = []);
 
   // TBD: ISSUE-35
-  Future importKey(KeyFormat format,
-                   ArrayBufferView keyData,
-                   AlgorithmIdentifier? algorithm,
-                   bool extractable = false,
-                   KeyUsage[] keyUsages = []);
-  Future exportKey(KeyFormat format, Key key);
+  DOMFuture importKey(KeyFormat format,
+                      ArrayBufferView keyData,
+                      AlgorithmIdentifier? algorithm,
+                      bool extractable = false,
+                      KeyUsage[] keyUsages = []);
+
+  DOMFuture exportKey(KeyFormat format, Key key);
 };
 
 Crypto implements RandomSource;

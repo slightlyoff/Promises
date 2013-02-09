@@ -14,7 +14,7 @@
 //
 //    It also aims to enable end-users (non-spec authors) to build systems
 //    using these types directly without appealing to libraries or DOM magic
-//    for creating/fulfilling Futures.
+//    for creating/fulfilling DOMFutures.
 //
 //    We identify the following features as required:
 //
@@ -22,7 +22,7 @@
 //      * Event-friendlyness. As this is a DOM API, it must be possible to
 //        register callbacks using the DOM's event mechanism.
 //
-//    The final goal is to define a future-compatible superset of the Future
+//    The final goal is to define a future-compatible superset of the DOMFuture
 //    design space to allow both subclassing by DOM API designers who need
 //    additional features (e.g., a "progress" event) and eventual subsetting by
 //    TC39 for adding Futures to the language directly.
@@ -32,9 +32,10 @@
 //    Unifying or describing the internal behavior of events is a non-goal.
 //    Futures are a single-request/single-repose formalism and may capture
 //    values from past resposes. Events, on the other hand, describe a series
-//    of future events.  They cover separate use-cases and we do not seek to
+//    of future events. They cover separate use-cases and we do not seek to
 //    join them here in any way other than to provide a way for receivers of a
-//    Future to receive eventual notification of resolution via event handler.
+//    DOMFuture to receive eventual notification of resolution via event
+//    handler.
 //
 //    Compatibility with existing promises/futures/deferreds libraries or
 //    terminology is a non-goal. Where adopting existing terminology improves
@@ -53,13 +54,13 @@
 //    future, and provide a uniform API for interacting with individual events,
 //    chains of events, and error handling for those events.
 //
-//    Futures take an initialization function as their only parameter. This
+//    DOMFutures take an initialization function as their only parameter. This
 //    function is called back synchronously (by the time construction finishes)
 //    with references to the the resolve and reject functions that can later be
-//    used to resolve the Future.
+//    used to resolve the DOMFuture.
 //
 //      function doAsyncWork() {
-//        return new Future(function(r) {
+//        return new DOMFuture(function(r) {
 //          setTimeout(function() { // ...time passes
 //            // Do work here
 //            r.accept("success");
@@ -70,7 +71,7 @@
 //      // Callers of the function can be notified of resolution easily:
 //      doAsyncWork().then(console.log.bind(console));
 //
-//    Futures provide a way for others to be notified when the resolution
+//    DOMFutures provide a way for others to be notified when the resolution
 //    occurs without handing them the ability to resolve the future itself.
 //    This is accomplished either by providing callbacks to the ".then()"
 //    method or by adding event handlers.
@@ -85,7 +86,7 @@
 //    demonstrate the following behavior:
 //
 //      var callbacks;
-//      var f = new Future(function(c) { callbacks = c; });
+//      var f = new DOMFuture(function(c) { callbacks = c; });
 //      assertTrue(f.state == "pending");
 //      callbacks.accept(null);
 //      assertTrue(f.state == "pending");
@@ -105,16 +106,16 @@
 //    ".then()" and receive a sensible result from which you can ".then()"
 //    again.
 //
-//    Futures return a new automatically-generated Future from each "then()"
-//    call. The then()-generated Futures are resolved by the callbacks passed
-//    to each "then()" invocation. These functions are called based on the
-//    resolution and their return values are passed onward to the next
-//    auto-generated Future:
+//    DOMFutures return a new automatically-generated DOMFuture from each
+//    "then()" call. The then()-generated DOMFutures are resolved by the
+//    callbacks passed to each "then()" invocation. These functions are called
+//    based on the resolution and their return values are passed onward to the
+//    next auto-generated DOMFuture:
 //
 //      // Example invocation
 //      var doItAsync = function() {
 //        var callbacks;
-//        var f = new Future(function(c) { callbacks = c; });
+//        var f = new DOMFuture(function(c) { callbacks = c; });
 //        // ...
 //        return f;
 //      };
@@ -165,14 +166,14 @@
 //    2.) Post-resolution
 //      2.1) then() callbacks added after initial dispatch phase ends
 //
-//    2.1 provides for a Future to have then() callbacks added after it is
-//    resolved, allowing programmers to treat a Future object as something which
-//    is safe to call .then() on at all times. For example, both calls to then()
-//    in the following example will succeed and both callbacks will receive the
-//    resolution value, albiet at different times:
+//    2.1 provides for a DOMFuture to have then() callbacks added after it is
+//    resolved, allowing programmers to treat a DOMFuture object as something
+//    which is safe to call .then() on at all times. For example, both calls to
+//    then() in the following example will succeed and both callbacks will
+//    receive the resolution value, albiet at different times:
 //
 //      var callbacks;
-//      var f = new Future(function(c) { callbacks = c; });
+//      var f = new DOMFuture(function(c) { callbacks = c; });
 //      setTimeout(callbacks.accept.bind(callbacks, "Success!"), 1);
 //      f.then(function(value) {
 //        // Just to illuminate the timing, we make sure that our next then()
@@ -192,11 +193,11 @@
 //    The passed set of callbacks includes cancel() and timeout() functions.
 //    These are syntactic sugar that generate Error objects with known name
 //    values ("Cancel" and "Timeout", respectively). Handling these values is
-//    done through the usual reject handler of a Future. Using only accept() and
-//    reject() we can re-create these sugar functions easily:
+//    done through the usual reject handler of a DOMFuture. Using only accept()
+//    and reject() we can re-create these sugar functions easily:
 //
 //      var callbacks;
-//      var f = new Future(function(c) { callbacks = c; });
+//      var f = new DOMFuture(function(c) { callbacks = c; });
 //      // Compatible, ad-hoc versions of cancel() and timeout()
 //      var cancel = function() { callbacks.reject(new Error("Cancel")); };
 //      var timeout = function() { callbacks.reject(new Error("Timeout")); };
@@ -237,10 +238,10 @@
 //    FIXME(slightlyoff)
 
 module events {
-  // Futures begin in the "pending" state and progress to other
+  // DOMFutures begin in the "pending" state and progress to other
   // states. Once moved from the "pending" state, they may never be
   // returned to it. The states are exclusive.
-  enum FutureState {
+  enum DOMFutureState {
     "pending",
     "accepted",
     "rejected"
@@ -256,7 +257,7 @@ module events {
   callback InitCallback = void (ResolverCallbacks callbacks);
 
   [Constructor(InitCallback init)]
-  interface Future : EventTarget {
+  interface DOMFuture : EventTarget {
     // Events
 
     // To notify observers we use the following DOM events which can be
@@ -277,27 +278,27 @@ module events {
     // Additionally, since a future's state should not be modifiable by
     // consumers, any attempt to use dispatchEvent must throw an error.
 
-    attribute readonly any         value;
-    attribute readonly any         error;
-    attribute readonly FutureState state;
+    attribute readonly any            value;
+    attribute readonly any            error;
+    attribute readonly DOMFutureState state;
 
-    // Returns a Future whose fulfillment value will be the return value
+    // Returns a DOMFuture whose fulfillment value will be the return value
     // from whichever of the callbacks is eventually invoked.
-    Future  then(optional EventHandler onaccept,
-                 optional EventHandler onreject);
+    DOMFuture  then(optional EventHandler onaccept,
+                    optional EventHandler onreject);
 
     // FIXME(slightlyoff):
     //  we don't have an extension point in the then() scheme that mirrors the
-    //  way we allow extension via the callbacks object in the Future
+    //  way we allow extension via the callbacks object in the DOMFuture
     //  constructor. This turns into a big problem for DOM APIs that need to be
     //  retrofitted to enable additional semantics and callbacks for them in a
     //  natrual way.
     //
-    // Future then(required any callbacks);
-    //        .then({ accept: function(v) { ... },
-    //                reject: function(e) { ... },
-    //                ...
-    //        })
+    // DOMFuture then(required any callbacks);
+    //           .then({ accept: function(v) { ... },
+    //                   reject: function(e) { ... },
+    //                   ...
+    //           })
 
     void    done(optional EventHandler onaccept,
                  optional EventHandler onreject);

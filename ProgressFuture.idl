@@ -6,7 +6,7 @@
 // Design Notes
 // ============
 //
-//  This is a subclass of DOM Future which adds support for progress events and
+//  This is a subclass of DOMFuture which adds support for progress events and
 //  callbacks.
 //
 // Usage
@@ -32,7 +32,7 @@ module events {
   callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
 
   [Constructor(ProgressInitCallback init)]
-  interface ProgressFuture : Future {
+  interface ProgressFuture : DOMFuture {
     // Additional events
     //
     //   progress
@@ -40,6 +40,6 @@ module events {
     //     Cancelable: No
     //     Context Info: value
     // Returns the Future from which it was called ("this").
-    Future  progress(optional EventHandler onprogress);
+    DOMFuture  progress(optional EventHandler onprogress);
   };
 };
