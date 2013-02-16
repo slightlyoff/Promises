@@ -255,6 +255,8 @@ module events {
   };
 
   callback InitCallback = void (ResolverCallbacks callbacks);
+  callback AcceptCallback = any (optional any value);
+  callback ErrorCallback = any (optional any error);
 
   [Constructor(InitCallback init)]
   interface DOMFuture : EventTarget {
@@ -284,8 +286,8 @@ module events {
 
     // Returns a DOMFuture whose fulfillment value will be the return value
     // from whichever of the callbacks is eventually invoked.
-    DOMFuture  then(optional EventHandler onaccept,
-                    optional EventHandler onreject);
+    DOMFuture  then(optional AcceptCallback onaccept,
+                    optional ErrorCallback onreject);
 
     // FIXME(slightlyoff):
     //  we don't have an extension point in the then() scheme that mirrors the
@@ -300,7 +302,7 @@ module events {
     //                   ...
     //           })
 
-    void    done(optional EventHandler onaccept,
-                 optional EventHandler onreject);
+    void    done(optional AcceptCallback onaccept,
+                 optional ErrorCallback onreject);
   };
 };
