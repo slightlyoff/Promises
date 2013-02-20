@@ -237,69 +237,67 @@
 //
 //    FIXME(slightlyoff)
 
-module events {
-  // DOMFutures begin in the "pending" state and progress to other
-  // states. Once moved from the "pending" state, they may never be
-  // returned to it. The states are exclusive.
-  enum DOMFutureState {
-    "pending",
-    "accepted",
-    "rejected"
-  };
+// DOMFutures begin in the "pending" state and progress to other
+// states. Once moved from the "pending" state, they may never be
+// returned to it. The states are exclusive.
+enum DOMFutureState {
+  "pending",
+  "accepted",
+  "rejected"
+};
 
-  interface ResolverCallbacks {
-    void accept(optional any value) raises(Error); // AlreadyResolved
-    void reject(optional any error) raises(Error); // AlreadyResolved
-    void cancel()                   raises(Error); // AlreadyResolved
-    void timeout()                  raises(Error); // AlreadyResolved
-  };
+interface ResolverCallbacks {
+  void accept(optional any value) raises(Error); // AlreadyResolved
+  void reject(optional any error) raises(Error); // AlreadyResolved
+  void cancel()                   raises(Error); // AlreadyResolved
+  void timeout()                  raises(Error); // AlreadyResolved
+};
 
-  callback InitCallback = void (ResolverCallbacks callbacks);
-  callback AnyCallback = any (optional any value);
+callback InitCallback = void (ResolverCallbacks callbacks);
+callback AnyCallback = any (optional any value);
 
-  [Constructor(InitCallback init)]
-  interface DOMFuture : EventTarget {
-    // Events
+[Constructor(InitCallback init)]
+interface DOMFuture : EventTarget {
+  // Events
 
-    // To notify observers we use the following DOM events which can be
-    // registered through the usual mechanism:
-    //
-    //   accept
-    //     Bubbles: No
-    //     Cancelable: No
-    //     Context Info: value
-    //
-    //   reject
-    //     Bubbles: No
-    //     Cancelable: No
-    //     Context Info: error
-    //
-    // Each of these events may be dispatched *only once*.
-    //
-    // Additionally, since a future's state should not be modifiable by
-    // consumers, any attempt to use dispatchEvent must throw an error.
+  // To notify observers we use the following DOM events which can be
+  // registered through the usual mechanism:
+  //
+  //   accept
+  //     Bubbles: No
+  //     Cancelable: No
+  //     Context Info: value
+  //
+  //   reject
+  //     Bubbles: No
+  //     Cancelable: No
+  //     Context Info: error
+  //
+  // Each of these events may be dispatched *only once*.
+  //
+  // Additionally, since a future's state should not be modifiable by
+  // consumers, any attempt to use dispatchEvent must throw an error.
 
-    attribute readonly any            value;
-    attribute readonly any            error;
-    attribute readonly DOMFutureState state;
+  attribute readonly any            value;
+  attribute readonly any            error;
+  attribute readonly DOMFutureState state;
 
-    // Returns a DOMFuture whose fulfillment value will be the return value
-    // from whichever of the callbacks is eventually invoked.
-    DOMFuture then(optional AnyCallback onaccept, optional AnyCallback onreject);
+  // Returns a DOMFuture whose fulfillment value will be the return value
+  // from whichever of the callbacks is eventually invoked.
+  DOMFuture then(optional AnyCallback onaccept, optional AnyCallback onreject);
 
-    // FIXME(slightlyoff):
-    //  we don't have an extension point in the then() scheme that mirrors the
-    //  way we allow extension via the callbacks object in the DOMFuture
-    //  constructor. This turns into a big problem for DOM APIs that need to be
-    //  retrofitted to enable additional semantics and callbacks for them in a
-    //  natrual way.
-    //
-    // DOMFuture then(required any callbacks);
-    //           .then({ accept: function(v) { ... },
-    //                   reject: function(e) { ... },
-    //                   ...
-    //           })
+  // FIXME(slightlyoff):
+  //  we don't have an extension point in the then() scheme that mirrors the
+  //  way we allow extension via the callbacks object in the DOMFuture
+  //  constructor. This turns into a big problem for DOM APIs that need to be
+  //  retrofitted to enable additional semantics and callbacks for them in a
+  //  natrual way.
+  //
+  // DOMFuture then(required any callbacks);
+  //           .then({ accept: function(v) { ... },
+  //                   reject: function(e) { ... },
+  //                   ...
+  //           })
 
-    void done(optional AnyCallback onaccept, optional AnyCallback onreject);
-  };
+  void done(optional AnyCallback onaccept, optional AnyCallback onreject);
 };
