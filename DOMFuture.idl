@@ -237,7 +237,6 @@
 //
 //    FIXME(slightlyoff)
 
-module events {
   // DOMFutures begin in the "pending" state and progress to other
   // states. Once moved from the "pending" state, they may never be
   // returned to it. The states are exclusive.
@@ -302,4 +301,3 @@ module events {
 
     void done(optional AnyCallback onaccept, optional AnyCallback onreject);
   };
-};

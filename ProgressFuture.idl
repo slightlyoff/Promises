@@ -24,7 +24,6 @@
 //    ...
 //  };
 
-module events {
   interface ProgressResolverCallbacks extends ResolverCallbacks {
     void progress(optional any progressValue);
   };
@@ -42,4 +41,3 @@ module events {
     // Returns the Future from which it was called ("this").
     DOMFuture  progress(optional EventHandler onprogress);
   };
-};
