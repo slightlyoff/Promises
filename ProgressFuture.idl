@@ -24,22 +24,20 @@
 //    ...
 //  };
 
-module events {
-  interface ProgressResolverCallbacks extends ResolverCallbacks {
-    void progress(optional any progressValue);
-  };
+interface ProgressResolverCallbacks extends ResolverCallbacks {
+  void progress(optional any progressValue);
+};
 
-  callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
+callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
 
-  [Constructor(ProgressInitCallback init)]
-  interface ProgressFuture : DOMFuture {
-    // Additional events
-    //
-    //   progress
-    //     Bubbles: No
-    //     Cancelable: No
-    //     Context Info: value
-    // Returns the Future from which it was called ("this").
-    DOMFuture  progress(optional EventHandler onprogress);
-  };
+[Constructor(ProgressInitCallback init)]
+interface ProgressFuture : DOMFuture {
+  // Additional events
+  //
+  //   progress
+  //     Bubbles: No
+  //     Cancelable: No
+  //     Context Info: value
+  // Returns the Future from which it was called ("this").
+  DOMFuture  progress(optional EventHandler onprogress);
 };
