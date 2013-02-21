@@ -20,12 +20,13 @@
 //
 //      * Chaining of .then() calls
 //      * Event-friendlyness. As this is a DOM API, it must be possible to
-//        register callbacks using the DOM's event mechanism.
+//        register callbacks using the DOM's event mechanism. Extensions and
+//        subclasses will naturally wish to add events, so at a minimum an
+//        eventing base-class should be available for them to extend and reuse.
 //
-//    The final goal is to define a future-compatible superset of the DOMFuture
-//    design space to allow both subclassing by DOM API designers who need
-//    additional features (e.g., a "progress" event) and eventual subsetting by
-//    TC39 for adding Futures to the language directly.
+//    The final goal is to allow both subclassing by DOM API designers (see
+//    ProgressFuture.idl for an example) and eventual subsetting by TC39 for
+//    adding Futures to the language directly.
 //
 //  Non-Goals:
 //
@@ -63,7 +64,7 @@
 //        return new DOMFuture(function(r) {
 //          setTimeout(function() { // ...time passes
 //            // Do work here
-//            r.accept("success");
+//            r.resolve("success");
 //          }, 100);
 //        });
 //      }
@@ -88,15 +89,15 @@
 //      var callbacks;
 //      var f = new DOMFuture(function(c) { callbacks = c; });
 //      assertTrue(f.state == "pending");
-//      callbacks.accept(null);
+//      callbacks.resolve(null);
 //      assertTrue(f.state == "pending");
 //
 //      try {
-//        callbacks.accept(null);
+//        callbacks.resolve(null);
 //        // Not reached
 //        assertTrue(false);
 //      } catch(e) {
-//        // Catch the AlreadyResolved error thrown by the second accept()
+//        // Catch the AlreadyResolved error thrown by the second resolve()
 //        assertTrue(e instanceof AlreadyResolved);
 //      }
 //
@@ -142,7 +143,7 @@
 //          .then(onaccept, console.error.bind(console)) // logs the error
 //          .done(null, console.error.bind(console));    // does nothing
 //
-//  Return Value Sniffing and value/error Chaining:
+//  Return Value Sniffing, value/error Chaining, and Forwarding:
 //
 //    Like many other Future systems, the callbacks for accept & error
 //    are used to resolve the auto-generated Future returned from a call to
@@ -157,6 +158,24 @@
 //        resolving the generated Future.
 //
 //    TODO(slightlyoff): updated example logic
+//
+//    Similar logic is in place when using the resolve() method to provide a
+//    value to resolve the Future with; if a value passed to resolve() is a
+//    Future, the value of the "local" future assumes the value of the "far"
+//    future. If it is any other value, it will be passed to accept(). The
+//    behavior of accept is to move the Future to the "accepted" state and
+//    set .value to whatever value is passed (regardless of type).
+//
+//    Pseudo-code for resolve():
+//
+//      resolverInstance.resolve = function(value) {
+//        if (isThenable(value)) {
+//          value.then(this.resolve, this.reject);
+//          return;
+//        }
+//        this.accept(value);
+//      }.bind(resolverInstance);
+//
 //
 //  Delivery order:
 //
