@@ -52,9 +52,9 @@ interface Key {
 /**************************************
  * 12
  **/
-interface CryptoOperation : DOMFuture {
-  DOMFuture process(ArrayBufferView buffer);
-  DOMFuture finish();
+interface CryptoOperation : EventedFuture {
+  EventedFuture process(ArrayBufferView buffer);
+  EventedFuture finish();
   void abort();
 
   readonly attribute Key? key;
@@ -68,7 +68,7 @@ interface CryptoOperation : DOMFuture {
 /**************************************
  * 13
  *
- *  REMOVED: supplanted by DOMFuture
+ *  REMOVED: supplanted by EventedFuture
  **/
 
 /**************************************
@@ -103,24 +103,24 @@ interface Crypto {
                          optional ArrayBufferView? buffer = null);
 
   // TBD: ISSUE-36
-  DOMFuture generateKey(AlgorithmIdentifier algorithm,
+  EventedFuture generateKey(AlgorithmIdentifier algorithm,
                       bool extractable = false,
                       KeyUsage[] keyUsages = []);
 
-  DOMFuture deriveKey(AlgorithmIdentifier algorithm,
+  EventedFuture deriveKey(AlgorithmIdentifier algorithm,
                       Key baseKey,
                       AlgorithmIdentifier? derivedKeyType,
                       bool extractable = false,
                       KeyUsage[] keyUsages = []);
 
   // TBD: ISSUE-35
-  DOMFuture importKey(KeyFormat format,
+  EventedFuture importKey(KeyFormat format,
                       ArrayBufferView keyData,
                       AlgorithmIdentifier? algorithm,
                       bool extractable = false,
                       KeyUsage[] keyUsages = []);
 
-  DOMFuture exportKey(KeyFormat format, Key key);
+  EventedFuture exportKey(KeyFormat format, Key key);
 };
 
 Crypto implements RandomSource;

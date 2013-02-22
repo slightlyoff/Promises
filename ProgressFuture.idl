@@ -1,13 +1,8 @@
 /*
- * Copyright (C) 2012 Google Inc. All rights reserved.
+ * Copyright (C) 2013 Google Inc. All rights reserved.
  */
 
-//
-// Design Notes
-// ============
-//
-//  This is a subclass of DOMFuture which adds support for progress events and
-//  callbacks.
+// A subclass of EventedFuture which adds support for progress notification.
 //
 // Usage
 // =====
@@ -25,13 +20,14 @@
 //  };
 
 interface ProgressResolverCallbacks extends ResolverCallbacks {
+  // Provide new progress which onprogress handlers will be notified of
   void progress(optional any progressValue);
 };
 
 callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
 
 [Constructor(ProgressInitCallback init)]
-interface ProgressFuture : DOMFuture {
+interface ProgressFuture : EventedFuture {
   // Additional events
   //
   //   progress
@@ -39,5 +35,8 @@ interface ProgressFuture : DOMFuture {
   //     Cancelable: No
   //     Context Info: value
   // Returns the Future from which it was called ("this").
+  [TreatNonCallableAsNull]
+     attribute Function?      onprogress;
+
   DOMFuture  progress(optional EventHandler onprogress);
 };
