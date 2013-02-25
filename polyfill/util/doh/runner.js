@@ -14,6 +14,7 @@ if (typeof this["print"] == "undefined" && console) {
 doh.global = this;
 
 doh.squelch = true;
+doh._print = print;
 
 doh._line = "------------------------------------------------------------";
 
@@ -24,7 +25,7 @@ doh.debug = function(){
 
   var a = Array.prototype.slice.call(arguments, 0);
   a.unshift("|");
-  print(a.join(" "));
+  doh._print(a.join(" "));
 }
 
 doh.error = function(){
@@ -36,7 +37,7 @@ doh.error = function(){
   // YOUR TEST RUNNER NEEDS TO IMPLEMENT THIS
   var a = Array.prototype.slice.call(arguments, 0);
   a.unshift("ERROR:");
-  print(a.join(" "));
+  doh._print(a.join(" "));
 }
 
 doh._AssertFailure = function(msg, hint){

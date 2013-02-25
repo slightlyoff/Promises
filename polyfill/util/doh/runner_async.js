@@ -10,6 +10,7 @@ var d = function(doh) {
 
 doh.selfTest = false;
 
+doh._print = console.log.bind(console);
 doh.global = this;
 
 doh.hitch = function(/*Object*/thisObject, /*Function|String*/method /*, ...*/){
@@ -80,7 +81,7 @@ doh._line = "------------------------------------------------------------";
 doh.debug = function(){
   var a = Array.prototype.slice.call(arguments, 0);
   a.unshift("|");
-  console.log(a.join(" "));
+  doh._print(a.join(" "))
 }
 
 doh._AssertFailure = function(msg, hint){
