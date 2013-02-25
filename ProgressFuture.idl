@@ -34,9 +34,9 @@ interface ProgressFuture : EventedFuture {
   //     Bubbles: No
   //     Cancelable: No
   //     Context Info: value
-  // Returns the Future from which it was called ("this").
   [TreatNonCallableAsNull]
      attribute Function?      onprogress;
 
-  DOMFuture  progress(optional EventHandler onprogress);
+  // Returns the Future from which it was called ("this").
+  ProgressFuture  progress(optional EventHandler onprogress);
 };
