@@ -242,6 +242,9 @@ Future.prototype = Object.create(null, {
   }),
 });
 
+// Statics
+Future.async = config.async;
+
 global.Future = Future;
 
 })(this, (typeof window !== 'undefined') ? window : {});
