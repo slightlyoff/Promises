@@ -1,0 +1,176 @@
+//    This class provides an asynchronous iterator which are intended to work
+//    together with the Future API but which is used in cases when the result
+//    isn't a single value, but rather a set of values which are incrementally
+//    and asynchronously generated.
+//
+//  Goals:
+//
+//    The API is intended to provide both the ability to read the full data
+//    stream, or read data up until the point that the consumer is interested.
+//
+//    The intent is also to allow multiple concurrent consumers of a single
+//    cursor data stream. However, for obvious reasons only one consumer can
+//    control when to move on to the next value.
+//
+//    It is also a goal to enable an efficient implementation which does not
+//    need to hold the whole data stream in memory. It is also a desired feature
+//    that the implementation doesn't need to know when notifying for the last
+//    value that this is indeed the last value in the stream. That knowledge is
+//    often not known until further processing has been done which means that
+//    it's more efficient to return the last value first, and then notify about
+//    the end of the stream in a separate asynchronous step.
+//
+//  Non-Goals:
+//
+//    It is not a goal to enable consumers to step forward and backward in the
+//    data stream. This would in many cases be an undue burden on the
+//    implementation and would run contrary to the efficency goal. It is
+//    possible that subclasses of this interface will provide that ability.
+//
+//    While enabling consumers to get the total number of items in the data
+//    stream is many times very desirable and useful, in many cases that number
+//    can't be known without generating the full data stream. Hence enabling
+//    getting that number would run contrary to the efficency goal. Again, future
+//    subclasses might provide that ability.
+//
+// Basic API:
+//
+//    The simplest way to use a Cursor is to consume its full data stream and
+//    then take some action once the end of the stream is reached. This is done
+//    using the forEach function:
+//
+//      let sum = 0;
+//      getResults().forEach(function(val) {
+//        sum += val;
+//      }).then(function() {
+//        displayResult(sum);
+//      });
+//
+//    In some cases it is not desired to immediate iterate the cursor, but instead
+//    do so after some other async action or actions have been taken.
+//
+//      let sum = 0;
+//      getResults().each(function(id) {
+//        let self = this;
+//        getValueForKey(id).then(function(val) {
+//          sum += val;
+//          self.continue();
+//        });
+//      }).then(function() {
+//        displayResult(sum);
+//      });
+//
+//    Creating a cursor is done much the same way as with a Future
+//
+//      function getCursor() {
+//        return new Cursor(function(r) {
+//          let n = 5;
+//          let intervalId = setInterval(function() {
+//            r.accept(--n);
+//            if (n === 0) {
+//              r.finish();
+//              clearInterval(intervalId);
+//            }
+//          }, 100);
+//        });
+//      }
+//
+//    If an error is produced during iteration, the each callbacks aren't
+//    triggered any more. Instead the whenFinished Future is resolved with an
+//    error. Same thing happens if any of the each callbacks throw an exception.
+//
+//  Processing model:
+//
+//    When a new value is produced, the following steps are taken, in order:
+//      * .value is changed to the newly produced value.
+//      * The Future returned by whenNext() is changed.
+//      * All callbacks registered through the each() function are called.
+//      * The previous whenNext-Future is resolved and any registered callbacks
+//        are called.
+//
+//    When an error has occurred:
+//      * .value is changed to undefined and .error is set to the raised error.
+//      * whenNext() is changed to return null.
+//      * The previous whenNext-Future is resolved with the raised error.
+//      * The Future returned by whenFinished() is resolved with the raised error.
+//
+//    When the end of the cursor is reached:
+//      * .value is changed to undefined.
+//      * whenNext() is changed to return null.
+//      * The previous whenNext-Future is resolved with the value undefined.
+//      * The Future returned by whenFinished() is resolved with the value undefined.
+//
+//  Outstanding issues:
+//
+//    * The whenFinished/whenNext names are terrible.
+//    * Should whenFinished/whenNext be done as readonly attributes?
+//    * Maybe the 'continue' and 'next' functions should switch names.
+//    * Should the cursor be passed as an explicit second argument to the callback
+//      rather than through 'this'?
+//    * Should the "this.continue()" callback in the 'forEach' function be
+//      inserted before any previously registered 'each' callback?
+//    * Is reusing the 'accept' and 'resolve' functions in the resolver interface
+//      too much of a hack?
+//    * Ideal would be if the Future returned from whenNext() changes immediately
+//      before any callbacks.
+//    * Does .state change from "accepted" to "pending" synchronously or at the
+//      end of the microtask when .continue() is called?
+//    * When a value is received, rather than calling all each() callbacks before
+//      resolving the whenNext future, we could register all each() callbacks
+//      with the future when it's created. That would preserve the order of
+//      registration, though only on the first value after the each() callback
+//      was registered.
+
+enum CursorState {
+  "pending",
+  "accepted",
+  "rejected",
+  "finished"
+};
+
+interface CursorResolverCallbacks : ResolverCallbacks {
+  // Signal that the end of the cursor has been reached
+  void finish();
+};
+
+callback CursorInitCallback = void (CursorResolverCallbacks callbacks);
+callback CursorCallback = void (any value);
+
+[Constructor(CursorInitCallback init)]
+interface Cursor {
+  attribute readonly CursorState state;
+  attribute readonly any value; // The most recently produced value.
+  attribute readonly any error;
+
+  // Future which is resolved when the end of the cursor is reached, or if
+  // an error occurs.
+  Future whenFinished();
+
+  // Future which is resolved when the next value is returned. Returns
+  // null once the "finished" state is reached.
+  Future whenNext();
+
+  // Register a callback which is called for each value produced by the cursor
+  // Returns the same value as whenFinished()
+  Future each(CursorCallback callback);
+
+  // Tell cursor to fetch the next value. Raises InvalidStateError if
+  // .state != "accepted"
+  void continue(); raises(Error) // InvalidStateError
+
+  // Convenience function for
+  // function forEach(callback) {
+  //   this.each(function() {
+  //     this.continue();
+  //   });
+  //   return this.each(callback);
+  // }
+  Future forEach(CursorCallback callback);
+
+  // Convenience function for
+  // function next() {
+  //   continue();
+  //   return whenNext();
+  // }
+  Future next();
+};
