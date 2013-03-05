@@ -207,6 +207,38 @@ var Future = function(init) {
   }
 };
 
+var isCallback = function(any) {
+  return (typeof any == "function");
+};
+
+// Used in .then()
+var wrap = function(callback, resolver, disposition) {
+  if (!isCallback(callback)) {
+    // If we don't get a callback, we want to forward whatever resolution we get
+    return resolver[disposition].bind(resolver);
+  }
+
+  return function() {
+    try {
+      var r = callback.apply(null, arguments);
+      resolver.resolve(r);
+    } catch(e) {
+      // Exceptions reject the resolver
+      resolver.reject(e);
+    }
+  };
+};
+
+var addCallbacks = function(onaccept, onreject, scope) {
+  if (isCallback(onaccept)) {
+    scope._addAcceptCallback(onaccept);
+  }
+  if (isCallback(onreject)) {
+    scope._addRejectCallback(onreject);
+  }
+  return scope;
+};
+
 Future.prototype = Object.create(null, {
   "then": _public(function(onaccept, onreject) {
     // The logic here is:
@@ -215,35 +247,20 @@ Future.prototype = Object.create(null, {
     //    the resolution of that future to the resolution of the returned
     //    Future.
     var f = this;
-    var wrap = function(callback, resolver) {
-      return function() {
-        try {
-          var r = callback.apply(null, arguments);
-          resolver.resolve(r);
-        } catch(e) {
-          // Exceptions reject the resolver
-          resolver.reject(e);
-        }
-      };
-    };
     return new Future(function(r) {
-      f._addAcceptCallback(wrap(onaccept, r));
-      f._addRejectCallback(wrap(onreject, r));
+      addCallbacks(wrap(onaccept, r, "resolve"),
+                   wrap(onreject, r, "reject"), f);
     });
   }),
   "done": _public(function(onaccept, onreject) {
-    this._addAcceptCallback(onaccept);
-    this._addRejectCallback(onreject);
-    return this; // FIXME: TODOC
+    return addCallbacks(onaccept, onreject, this);
   }),
   "catch": _public(function(onreject) {
-    this._addRejectCallback(onreject);
-    return this; // FIXME: TODOC
+    return addCallbacks(null, onreject, this);
   }),
 });
 
 // Statics
-Future.async = config.async;
 
 global.Future = Future;
 

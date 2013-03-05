@@ -3,6 +3,21 @@
 
 var t = doh;
 
+//
+// Trivial utilities.
+//
+var log = console.log.bind(console);
+var rejected = function(reason) {
+  return new Future(function(r) { r.reject(reason); });
+};
+var accepted = function(value) {
+  return new Future(function(r) { r.accept(value); });
+};
+var resolved = function(value) {
+  return new Future(function(r) { r.resolve(value); });
+};
+var dummy = { dummy: "dummy" };
+
 t.add("Future", [
   function prototypeMethods() {
     t.is(typeof Future.prototype.then, "function");
@@ -37,10 +52,10 @@ t.add("Future", [
 
 
   function is_delivery_delayed() {
+    var d = new doh.Deferred();
     var resolver;
     var resolved = false;
     var future = new Future(function(r) { resolver = r; });
-    var d = new doh.Deferred();
     future.then(function(value) {
       resolved = true;
       t.is(true, value);
@@ -67,8 +82,31 @@ t.add("Future", [
     t.t(f.catch() === f);
   },
 
+  function values_forward() {
+    var d = new doh.Deferred();
+    var eb = d.errback.bind(d);
+    var f = accepted(dummy);
+    f.then()
+     .done(null, eb)
+     .done(function(e) {
+        t.is(dummy, e);
+        d.callback();
+     }, eb);
+    return d;
+  },
+
   // FIXME: add tests for:
   //  - forwarding of errors/values down the chain if unhandled
+  function errors_forward() {
+    var d = new doh.Deferred();
+    var f = rejected("meh");
+    f.then(log)
+     .done(log, function(e) {
+        t.is("meh", e);
+        d.callback();
+     });
+    return d;
+  },
 ]);
 
 doh.add("Resolver", [
@@ -246,6 +284,16 @@ doh.add("Resolver", [
       },
       d.errback.bind(d)
     );
+    return d;
+  },
+
+  //
+  // Inspired by the promises-tests repo.
+  //
+  function non_function_callbacks_are_ignored() {
+    var d = new doh.Deferred();
+    var nonFunction = 10;
+    rejected(dummy).then(nonFunction, d.callback.bind(d));
     return d;
   },
 
