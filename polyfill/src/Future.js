@@ -85,9 +85,7 @@ var isThenable = function(it) {
   return (
     !!it &&
     (typeof it.then == "function") &&
-    (it.then.length == 2) &&
-    (typeof it.done == "function") &&
-    (it.done.length == 2)
+    (it.then.length == 2)
   );
 };
 
