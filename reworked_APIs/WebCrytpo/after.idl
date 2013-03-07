@@ -52,23 +52,20 @@ interface Key {
 /**************************************
  * 12
  **/
-interface CryptoOperation : EventedFuture {
-  EventedFuture process(ArrayBufferView buffer);
-  EventedFuture finish();
+interface CryptoOperation : Future {
+  Future process(ArrayBufferView buffer);
+  Future finish();
   void abort();
 
   readonly attribute Key? key;
   readonly attribute Algorithm algorithm;
   readonly attribute any result;
-
-  [TreatNonCallableasNull] attribute Function? onabort;
-  [TreatNonCallableAsNull] attribute Function? onprogress;
 };
 
 /**************************************
  * 13
  *
- *  REMOVED: supplanted by EventedFuture
+ *  REMOVED: supplanted by Future
  **/
 
 /**************************************
@@ -103,24 +100,24 @@ interface Crypto {
                          optional ArrayBufferView? buffer = null);
 
   // TBD: ISSUE-36
-  EventedFuture generateKey(AlgorithmIdentifier algorithm,
-                      bool extractable = false,
-                      KeyUsage[] keyUsages = []);
+  Future generateKey(AlgorithmIdentifier algorithm,
+                     bool extractable = false,
+                     KeyUsage[] keyUsages = []);
 
-  EventedFuture deriveKey(AlgorithmIdentifier algorithm,
-                      Key baseKey,
-                      AlgorithmIdentifier? derivedKeyType,
-                      bool extractable = false,
-                      KeyUsage[] keyUsages = []);
+  Future deriveKey(AlgorithmIdentifier algorithm,
+                   Key baseKey,
+                   AlgorithmIdentifier? derivedKeyType,
+                   bool extractable = false,
+                   KeyUsage[] keyUsages = []);
 
   // TBD: ISSUE-35
-  EventedFuture importKey(KeyFormat format,
-                      ArrayBufferView keyData,
-                      AlgorithmIdentifier? algorithm,
-                      bool extractable = false,
-                      KeyUsage[] keyUsages = []);
+  Future importKey(KeyFormat format,
+                   ArrayBufferView keyData,
+                   AlgorithmIdentifier? algorithm,
+                   bool extractable = false,
+                   KeyUsage[] keyUsages = []);
 
-  EventedFuture exportKey(KeyFormat format, Key key);
+  Future exportKey(KeyFormat format, Key key);
 };
 
 Crypto implements RandomSource;

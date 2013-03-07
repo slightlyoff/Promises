@@ -19,14 +19,9 @@
 //    We identify the following features as required:
 //
 //      * Chaining of .then() calls
-//      * Event-friendlyness. As this is a DOM API, it must be possible to
-//        register callbacks using the DOM's event mechanism. Extensions and
-//        subclasses will naturally wish to add events, so at a minimum an
-//        eventing base-class should be available for them to extend and reuse.
-//
-//    The final goal is to allow both subclassing by DOM API designers (see
-//    ProgressFuture.idl for an example) and eventual subsetting by TC39 for
-//    adding Futures to the language directly.
+//      * Subclassing by DOM API designers (see ProgressFuture.idl, e.g.)
+//      * Eventual import or subsetting by TC39 for adding Futures to the
+//        language directly.
 //
 //  Non-Goals:
 //
@@ -34,9 +29,7 @@
 //    Futures are a single-request/single-repose formalism and may capture
 //    values from past resposes. Events, on the other hand, describe a series
 //    of future events. They cover separate use-cases and we do not seek to
-//    join them here in any way other than to provide a way for receivers of a
-//    Future to receive eventual notification of resolution via event
-//    handler.
+//    join them here.
 //
 //    Compatibility with existing promises/futures/deferreds libraries or
 //    terminology is a non-goal. Where adopting existing terminology improves
@@ -52,8 +45,7 @@
 //  Basic API:
 //
 //    DOM Futures represent the completion of a single operation, past or
-//    future, and provide a uniform API for interacting with individual events,
-//    chains of events, and error handling for those events.
+//    future, an error handling for that operation.
 //
 //    Futures take an initialization function as their only parameter. This
 //    function is called back synchronously (by the time construction finishes)
@@ -75,7 +67,7 @@
 //    Futures provide a way for others to be notified when the resolution
 //    occurs without handing them the ability to resolve the future itself.
 //    This is accomplished either by providing callbacks to the ".then()"
-//    method or by adding event handlers.
+//    method.
 //
 //  Processing model:
 //
@@ -176,33 +168,19 @@
 //        this.accept(value);
 //      }.bind(resolverInstance);
 //
-//  Events:
-//
-//    A previous version of this design included DOM events in all Future
-//    instances (and was therefore called "DOMFuture"). This draft splits these
-//    classes, providing both a "naked" Future class and the event-sending
-//    EventedFuture subclass. Both are meant as superclasses and concrete
-//    utilities for other DOM API authors to use and extend as they see fit,
-//    however our expectation is that many DOM API refactorings will use
-//    EventedFuture in order to accomidate existing event-oriented design
-//    choices. See ProgressFuture.idl for an example of this style of use.
-//
 //  Delivery order:
 //
-//    1.) Resolution
-//      1.1) then() callbacks in the order of registration
-//      1.2) dispatchEvent() handlers (for EventedFuture)
-//    2.) Post-resolution
-//      2.1) then() callbacks added after initial dispatch phase ends
+//    1) then() callbacks in the order of registration
+//    2) then() callbacks added after initial dispatch phase ends
 //
-//    2.1 provides for a Future to have then() callbacks added after it is
+//    2 provides for a Future to have then() callbacks added after it is
 //    resolved, allowing programmers to treat a Future object as something
 //    which is safe to call .then() on at all times. For example, both calls to
 //    then() in the following example will succeed and both callbacks will
 //    receive the resolution value, albiet at different times:
 //
 //      var callbacks;
-//      var f = new EventedFuture(function(c) { callbacks = c; });
+//      var f = new Future(function(c) { callbacks = c; });
 //      setTimeout(callbacks.accept.bind(callbacks, "Success!"), 1);
 //      f.then(function(value) {
 //        // Just to illuminate the timing, we make sure that our next then()
@@ -329,31 +307,3 @@ interface Future {
   //                ...
   //        })
 };
-
-[Constructor(InitCallback init)]
-interface EventedFuture : Future {
-  // Events
-  //
-  //   accept
-  //     Bubbles: No
-  //     Cancelable: No
-  //     Context Info: value
-  //
-  //   reject
-  //     Bubbles: No
-  //     Cancelable: No
-  //     Context Info: error
-  //
-  // Each of these events may be dispatched *only once*.
-  //
-  [TreatNonCallableAsNull]
-     attribute Function?      onaccept;
-  [TreatNonCallableAsNull]
-     attribute Function?      onreject;
-
-  // Since a future's state should not be modifiable by consumers, callbacks
-  // SHOULD check for the isTrusted property of the event to be set to true:
-  //
-  //    http://www.w3.org/TR/DOM-Level-3-Events/#trusted-events
-};
-EventedFuture implements EventTarget;

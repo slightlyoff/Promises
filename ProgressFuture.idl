@@ -1,8 +1,11 @@
-/*
- * Copyright (C) 2013 Google Inc. All rights reserved.
- */
+// Copyright (C) 2013:
+//    Alex Russell <slightlyoff@chromium.org>
+//    Yehua Katz
+//
+// Use of this source code is governed by
+//    http://www.apache.org/licenses/LICENSE-2.0
 
-// A subclass of EventedFuture which adds support for progress notification.
+// A subclass of Future which adds support for progress notification.
 //
 // Usage
 // =====
@@ -10,14 +13,6 @@
 //  doItAsyncWithProgress(...).
 //    progress(function(progressValue) { ... }).
 //    then(onaccept, onreject);
-//
-//  // or, using the event style:
-//
-//  var f = doItAsyncWithProgress(...).done(onaccept, onreject);
-//  f.onprogress = function(progressEvent) {
-//    var progressValue = progressEvent.value;
-//    ...
-//  };
 
 interface ProgressResolverCallbacks extends ResolverCallbacks {
   // Provide new progress which onprogress handlers will be notified of
@@ -27,16 +22,7 @@ interface ProgressResolverCallbacks extends ResolverCallbacks {
 callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
 
 [Constructor(ProgressInitCallback init)]
-interface ProgressFuture : EventedFuture {
-  // Additional events
-  //
-  //   progress
-  //     Bubbles: No
-  //     Cancelable: No
-  //     Context Info: value
-  [TreatNonCallableAsNull]
-     attribute Function?      onprogress;
-
+interface ProgressFuture : Future {
   // Returns the Future from which it was called ("this").
   ProgressFuture  progress(optional EventHandler onprogress);
 };

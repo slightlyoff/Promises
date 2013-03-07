@@ -48,7 +48,7 @@ dictionary IDBVersionChangeEventInit : EventInit {
 /**************************************
  * 3.2.1
  **/
-interface IDBRequest : EventedFuture {
+interface IDBRequest : Future {
     // Result becomes an alias for `value`
     readonly attribute any            result;
     // `error` is no longer needed as it's part of EventedFuture
@@ -65,6 +65,8 @@ interface IDBRequest : EventedFuture {
     [TreatNonCallableAsNull]
              attribute Function?      onerror;
 };
+
+IDBRequest implements EventTarget;
 
 interface IDBOpenDBRequest : IDBRequest {
     [TreatNonCallableAsNull]

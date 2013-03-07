@@ -1,8 +1,13 @@
+// Copyright (C) 2013:
+//    Alex Russell <slightlyoff@chromium.org>
+//    Yehua Katz
+//
+// Use of this source code is governed by
+//    http://www.apache.org/licenses/LICENSE-2.0
+
 // FIXME(slightlyoff):
-//  - Add license block after consulting with wycats
-//  - Implement EventedFuture subclasss
-//  - Browser test harness
-//  - Document "npm test"
+//    - Document "npm test"
+//    - Change global name from "Future" to something less conflicty
 (function(global, browserGlobal) {
 "use strict";
 
