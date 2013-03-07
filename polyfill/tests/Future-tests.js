@@ -16,7 +16,30 @@ var accepted = function(value) {
 var resolved = function(value) {
   return new Future(function(r) { r.resolve(value); });
 };
+var pending = function() {
+  var resolver;
+  var future = new Future(function(r) { resolver = r; });
+  return {
+    future: future,
+    accept: resolver.accept,
+    reject: resolver.reject,
+    resolve: resolver.resolve,
+  };
+};
+
 var dummy = { dummy: "dummy" };
+var sentinel = { sentinel: "sentinel" };
+
+var async = function(desc, test) {
+  return {
+    name: desc,
+    runTest: function() {
+      var d = new doh.Deferred();
+      test(d, d.callback.bind(d), d.errback.bind(d));
+      return d;
+    }
+  };
+};
 
 t.add("Future", [
   function prototypeMethods() {
@@ -33,7 +56,6 @@ t.add("Future", [
   },
 
   function no_arg_ctor() {
-    return;
     var future = new Future();
     t.is("pending", future.state);
   },
@@ -50,9 +72,7 @@ t.add("Future", [
     t.is(false, resolver.isResolved);
   },
 
-
-  function is_delivery_delayed() {
-    var d = new doh.Deferred();
+  async("Is delivery delayed?", function(d) {
     var resolver;
     var resolved = false;
     var future = new Future(function(r) { resolver = r; });
@@ -69,8 +89,7 @@ t.add("Future", [
     // FIXME: what should future.value be here?
     t.is("pending", future.state);
     t.is(true, resolver.isResolved);
-    return d;
-  },
+  }),
 
   function done_returns_self() {
     var f = new Future();
@@ -82,8 +101,7 @@ t.add("Future", [
     t.t(f.catch() === f);
   },
 
-  function values_forward() {
-    var d = new doh.Deferred();
+  async("Values forward correctly", function(d) {
     var eb = d.errback.bind(d);
     var f = accepted(dummy);
     f.then()
@@ -92,21 +110,16 @@ t.add("Future", [
         t.is(dummy, e);
         d.callback();
      }, eb);
-    return d;
-  },
+  }),
 
-  // FIXME: add tests for:
-  //  - forwarding of errors/values down the chain if unhandled
-  function errors_forward() {
-    var d = new doh.Deferred();
+  async("Errors forward correctly", function(d) {
     var f = rejected("meh");
     f.then(log)
      .done(log, function(e) {
         t.is("meh", e);
         d.callback();
      });
-    return d;
-  },
+  }),
 ]);
 
 doh.add("Resolver", [
@@ -128,8 +141,7 @@ doh.add("Resolver", [
     });
   },
 
-  function cancel() {
-    var d = new doh.Deferred();
+  async("cancel", function(d) {
     var resolver;
     var future = new Future(function(r) {
       try {
@@ -154,11 +166,9 @@ doh.add("Resolver", [
     );
     t.t(resolver.isResolved);
     t.is("pending", future.state);
-    return d;
-  },
+  }),
 
-  function timeout() {
-    var d = new doh.Deferred();
+  async("timeout", function(d) {
     var resolver;
     var future = new Future(function(r) {
       try {
@@ -182,11 +192,9 @@ doh.add("Resolver", [
     );
     t.t(resolver.isResolved);
     t.is("pending", future.state);
-    return d;
-  },
+  }),
 
-  function resolve_forwards_errors() {
-    var d = new doh.Deferred();
+  async("resolve forwards errors", function(d) {
     var e = new Error("synthetic");
     var resolver;
     var f1 = new Future(function(r) {
@@ -206,11 +214,9 @@ doh.add("Resolver", [
         d.callback();
       }
     );
-    return d;
-  },
+  }),
 
-  function resolve_forwards_values() {
-    var d = new doh.Deferred();
+  async("resolve forwards values", function(d) {
     var v = new Error("synthetic");
     var resolver;
     var f1 = new Future(function(r) {
@@ -229,11 +235,9 @@ doh.add("Resolver", [
       },
       d.errback.bind(d)
     );
-    return d;
-  },
+  }),
 
-  function resolve_does_not_forward_non_futures() {
-    var d = new doh.Deferred();
+  async("resolve does not forward non futures", function(d) {
     var v = new Error("synthetic");
     var resolver;
     var f1 = new Future(function(r) {
@@ -252,11 +256,9 @@ doh.add("Resolver", [
       },
       d.errback.bind(d)
     );
-    return d;
-  },
+  }),
 
-  function resolve_forwards_values_through_then() {
-    var d = new doh.Deferred();
+  async("resolve forwards values through then", function(d) {
     var v = new Error("synthetic");
     var resolver;
     var f1 = new Future(function(r) {
@@ -284,18 +286,24 @@ doh.add("Resolver", [
       },
       d.errback.bind(d)
     );
-    return d;
-  },
+  }),
 
   //
   // Inspired by the promises-tests repo.
   //
-  function non_function_callbacks_are_ignored() {
-    var d = new doh.Deferred();
-    var nonFunction = 10;
-    rejected(dummy).then(nonFunction, d.callback.bind(d));
-    return d;
-  },
+  async("non function rejected callbacks are ignored",
+    function(d, done, error) {
+      var nonFunction = 10;
+      rejected(dummy).then(10, done);
+    }
+  ),
+
+  async("non function accepted callbacks are ignored",
+    function(d, done, error) {
+      var nonFunction = 10;
+      accepted(dummy).then(done, 10);
+    }
+  ),
 
 ]);
 
