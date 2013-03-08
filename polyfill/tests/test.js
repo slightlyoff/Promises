@@ -3,7 +3,7 @@ var filemap = require("filemap");
 var _eval = require("eval");
 
 var files = [
-  "../util/doh/runner_async.js",
+  "../third_party/doh/runner_async.js",
   "../src/Future.js",
   "Future-tests.js"
 ];
