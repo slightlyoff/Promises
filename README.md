@@ -29,7 +29,7 @@ objects with standardized methods. The current design provides a constructable c
 
 ```js
 // Accepts "accept" and "reject" callbacks, roughly the same thing as success
-and failure for the operation.
+// and failure for the operation.
 futureInstance.then(onaccept, onreject);
 
 // Accept and reject callbacks only ever have a single parameter, which is the
