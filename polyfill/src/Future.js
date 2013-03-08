@@ -86,7 +86,6 @@ var isThenable = function(it) {
     !!it &&
     (typeof it.then == "function")
   );
-  // console.log(it, "is thenable:", thenable);
   return thenable;
 };
 
@@ -129,10 +128,13 @@ var Resolver = function(future,
     // It seems A+ doesn't like the throw behavior
     // assertUnresolved();
     if (isResolved) return;
-    // console.log("resolving with:", value);
     if (isThenable(value)) {
       // FIXME(slightlyoff): use .then() for compat?
-      value.done(resolver.resolve, resolver.reject);
+      if (typeof value.done == "function") {
+        value.done(resolver.resolve, resolver.reject);
+      } else {
+        value.then(resolver.resolve, resolver.reject);
+      }
       return;
     }
     resolver.accept(value);
@@ -146,7 +148,6 @@ var Resolver = function(future,
     if (isResolved) return;
     isResolved = true;
     async(function() {
-      // console.log("accepting::async:", value);
       setState("accepted");
       setValue(value);
       acceptCallbacks.pump(value);
@@ -158,9 +159,7 @@ var Resolver = function(future,
     // assertUnresolved();
     if (isResolved) return;
     isResolved = true;
-    // console.log("rejecting:", error);
     async(function() {
-      // console.log("rejecting::async:", error);
       setState("rejected");
       setError(error);
       rejectCallbacks.pump(error);
