@@ -44,11 +44,11 @@ futureInstance.then(
 // .then() always returns a new Future, one which takes whatever value the
 // callback it's registered with returns:
 futureInstance.then(function(value) {
-                      return processValue(value);
-                    })
-                .then(function(processedValue) {
-                  // ...
-                });
+                return processValue(value);
+              })
+              .then(function(processedValue) {
+                // ...
+              });
 
 // A key part of the Futures design is that these operations are *chainable*,
 // even for asynchronous code. This makes it easy to compose asynchronous
@@ -61,7 +61,7 @@ futureInstance.then(aHandlerThatReturnsAFuture)
 futureInstance.done(onaccept, onreject);
 
 // Similarly, .catch() gives you access only to errors:
-futureInstance.catch(onreject);
+futureInstance.catch(, onreject);
 ```
 
 ## OK, So Why Futures For DOM?
