@@ -12,7 +12,7 @@
 "use strict";
 
 // Borrowed from RSVP.js
-var config = {};
+var async;
 
 var MutationObserver = browserGlobal.MutationObserver ||
                        browserGlobal.WebKitMutationObserver;
@@ -20,7 +20,7 @@ var Future;
 
 if (typeof process !== 'undefined' &&
   {}.toString.call(process) === '[object process]') {
-  config.async = function(callback, binding) {
+  async = function(callback, binding) {
     process.nextTick(function() {
       callback.call(binding);
     });
@@ -47,12 +47,12 @@ if (typeof process !== 'undefined' &&
     observer = null;
   });
 
-  config.async = function(callback, binding) {
+  async = function(callback, binding) {
     queue.push([callback, binding]);
     element.setAttribute('drainQueue', 'drainQueue');
   };
 } else {
-  config.async = function(callback, binding) {
+  async = function(callback, binding) {
     setTimeout(function() {
       callback.call(binding);
     }, 1);
@@ -82,11 +82,12 @@ var _public = function(v) { return _method(v, 1); };
 
 var isThenable = function(it) {
   // FIXME(slightlyoff): need a better/standard definition!
-  return (
+  var thenable = (
     !!it &&
-    (typeof it.then == "function") &&
-    (it.then.length == 2)
+    (typeof it.then == "function")
   );
+  // console.log(it, "is thenable:", thenable);
+  return thenable;
 };
 
 var AlreadyResolved = function(name) {
@@ -97,7 +98,7 @@ AlreadyResolved.prototype = Object.create(Error.prototype);
 var Backlog = function() {
   var bl = [];
   bl.pump = function(value) {
-    config.async(function() {
+    async(function() {
       var l = bl.length;
       var x = 0;
       while(x < l) {
@@ -121,28 +122,30 @@ var Resolver = function(future,
       throw new AlreadyResolved("Already Resolved");
     }
   };
+  var resolver = this;
 
   // Indirectly resolves the Future, chaining any passed Future's resolution
   this.resolve = function(value) {
-    assertUnresolved();
+    // It seems A+ doesn't like the throw behavior
+    // assertUnresolved();
+    if (isResolved) return;
     // console.log("resolving with:", value);
     if (isThenable(value)) {
       // FIXME(slightlyoff): use .then() for compat?
-      value.done(this.resolve.bind(this),
-                 this.reject.bind(this));
+      value.done(resolver.resolve, resolver.reject);
       return;
     }
-    this.accept(value);
+    resolver.accept(value);
     // Set isResolved last to ensure that accept() doesn't throw
     isResolved = true;
   };
 
   // Directly accepts the future, no matter what value's type is
   this.accept = function(value) {
-    assertUnresolved();
+    // assertUnresolved();
+    if (isResolved) return;
     isResolved = true;
-    // console.log("accepting:", value);
-    config.async(function() {
+    async(function() {
       // console.log("accepting::async:", value);
       setState("accepted");
       setValue(value);
@@ -152,10 +155,11 @@ var Resolver = function(future,
 
   // Rejects the future
   this.reject = function(error) {
-    assertUnresolved();
+    // assertUnresolved();
+    if (isResolved) return;
     isResolved = true;
     // console.log("rejecting:", error);
-    config.async(function() {
+    async(function() {
       // console.log("rejecting::async:", error);
       setState("rejected");
       setError(error);
@@ -163,8 +167,8 @@ var Resolver = function(future,
     });
   };
 
-  this.cancel  = function() { this.reject(new Error("Cancel")); };
-  this.timeout = function() { this.reject(new Error("Timeout")); };
+  this.cancel  = function() { resolver.reject(new Error("Cancel")); };
+  this.timeout = function() { resolver.reject(new Error("Timeout")); };
 
   Object.defineProperties(this, {
     isResolved: _readOnlyProperty(function() { return isResolved; })
