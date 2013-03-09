@@ -116,55 +116,54 @@ var Resolver = function(future,
                         setError,
                         setState) {
   var isResolved = false;
+  /*
   var assertUnresolved = function() {
     if (isResolved) {
       throw new AlreadyResolved("Already Resolved");
     }
   };
+  */
   var resolver = this;
-
-  // Indirectly resolves the Future, chaining any passed Future's resolution
-  this.resolve = function(value) {
-    // It seems A+ doesn't like the throw behavior
-    // assertUnresolved();
-    if (isResolved) return;
-    if (isThenable(value)) {
-      // FIXME(slightlyoff): use .then() for compat?
-      if (typeof value.done == "function") {
-        value.done(resolver.resolve, resolver.reject);
-      } else {
-        value.then(resolver.resolve, resolver.reject);
-      }
-      return;
-    }
-    resolver.accept(value);
-    // Set isResolved last to ensure that accept() doesn't throw
-    isResolved = true;
-  };
-
-  // Directly accepts the future, no matter what value's type is
-  this.accept = function(value) {
-    // assertUnresolved();
-    if (isResolved) return;
-    isResolved = true;
+  var accept = function(value) {
     async(function() {
       setState("accepted");
       setValue(value);
       acceptCallbacks.pump(value);
     });
   };
-
-  // Rejects the future
-  this.reject = function(error) {
-    // assertUnresolved();
-    if (isResolved) return;
-    isResolved = true;
+  var reject = function(reason) {
     async(function() {
       setState("rejected");
-      setError(error);
-      rejectCallbacks.pump(error);
+      setError(reason);
+      rejectCallbacks.pump(reason);
     });
   };
+  var resolve = function(value) {
+    if (isThenable(value)) {
+      var funcName =  (typeof value.done == "function") ? "done" : "then";
+      value[funcName](resolve, reject);
+      return;
+    }
+    accept(value);
+  };
+  var ifNotResolved = function(func) {
+    return function(value) {
+      // It seems A+ doesn't like the throw behavior
+      // assertUnresolved();
+      if (isResolved) return;
+      isResolved = true;
+      func(value);
+    }
+  };
+
+  // Indirectly resolves the Future, chaining any passed Future's resolution
+  this.resolve = ifNotResolved(resolve);
+
+  // Directly accepts the future, no matter what value's type is
+  this.accept = ifNotResolved(accept);
+
+  // Rejects the future
+  this.reject = ifNotResolved(reject);
 
   this.cancel  = function() { resolver.reject(new Error("Cancel")); };
   this.timeout = function() { resolver.reject(new Error("Timeout")); };

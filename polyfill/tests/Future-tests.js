@@ -293,6 +293,17 @@ doh.add("Resolver", [
     );
   }),
 
+  async("isResolved is true while forwarding", function(d) {
+    var f1 = pending();
+    var r1;
+    var f2 = new Future(function(r) {
+      r1 = r;
+      r.resolve(f1);
+    });
+    t.t(r1.isResolved);
+    d.callback();
+  }),
+
   //
   // Inspired by the promises-tests repo.
   //
