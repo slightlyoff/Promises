@@ -87,7 +87,7 @@ if (document.readyState == "complete") {
 This is cumbersome and error-prone, not to mention ugly. IndexedDB's
 [`IDBRequest` class](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest) also sports a `readyState` property, but the values range from [1-2](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest#readyState_constants), not [0-4 as used in XHR](https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#Properties) or [strings as used for documents](http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#current-document-readiness). Making matters worse, the callback and event names don't even match! Clearly DOM needs a better way to do things.
 
-A unform interface would allow us to manage our callbacks sanely across APIs:
+A uniform interface would allow us to manage our callbacks sanely across APIs:
 
 ```js
 // Example of what the future might hold, not in any current spec
