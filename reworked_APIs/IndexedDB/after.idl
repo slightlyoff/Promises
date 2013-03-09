@@ -51,7 +51,7 @@ dictionary IDBVersionChangeEventInit : EventInit {
 interface IDBRequest : Future {
     // Result becomes an alias for `value`
     readonly attribute any            result;
-    // `error` is no longer needed as it's part of EventedFuture
+    // `error` is no longer needed as it's part of Future.
     // readonly attribute DOMError       error;
 
     readonly attribute Object         source;
