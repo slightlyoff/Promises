@@ -116,13 +116,13 @@ var Resolver = function(future,
                         setError,
                         setState) {
   var isResolved = false;
-  /*
+
   var assertUnresolved = function() {
     if (isResolved) {
       throw new AlreadyResolved("Already Resolved");
     }
   };
-  */
+
   var resolver = this;
   var accept = function(value) {
     async(function() {
@@ -148,9 +148,7 @@ var Resolver = function(future,
   };
   var ifNotResolved = function(func) {
     return function(value) {
-      // It seems A+ doesn't like the throw behavior
-      // assertUnresolved();
-      if (isResolved) return;
+      assertUnresolved();
       isResolved = true;
       func(value);
     }

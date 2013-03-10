@@ -24,8 +24,16 @@ var adapter = {
     var future = new Future(function(r) { resolver = r; });
     return {
       promise: future,
-      fulfill: resolver.resolve.bind(resolver),
-      reject:  resolver.reject.bind(resolver),
+      fulfill: function (value) {
+        try {
+          resolver.resolve(value);
+        } catch (e) { }
+      },
+      reject: function (reason) {
+        try {
+          resolver.reject(reason);
+        } catch (e) { }
+      }
     };
   }
 };
