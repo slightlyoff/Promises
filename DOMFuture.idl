@@ -113,9 +113,9 @@
 //        return f;
 //      };
 //      doItAsync()
-//          .then(onaccept, onreject)
-//          .then(onacceptIntermediate)
-//          .done(onacceptFinal);
+//          .then(accept, reject)
+//          .then(acceptIntermediate)
+//          .done(acceptFinal);
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
 //    which registers a handler for that particular disposition (accept &
@@ -124,7 +124,7 @@
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
-//          .then(onaccept) // "onaccept" is not called, and we fast-forward
+//          .then(accept) // "accept" is not called, and we fast-forward
 //          .done(null, console.error.bind(console));
 //
 //    If the second call were to handle "error", the final callback would not
@@ -132,7 +132,7 @@
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
-//          .then(onaccept, console.error.bind(console)) // logs the error
+//          .then(accept, console.error.bind(console)) // logs the error
 //          .done(null, console.error.bind(console));    // does nothing
 //
 //  Return Value Sniffing, value/error Chaining, and Forwarding:
@@ -210,7 +210,7 @@
 //      var timeout = function() { callbacks.reject(new Error("Timeout")); };
 //
 //      // Register a reject handler that understands cancelation and timeout:
-//      f.then(onaccept, function(reason) {
+//      f.then(accept, function(reason) {
 //        switch(reason.name) {
 //          case "Cancel":
 //            // handle cancelation...
@@ -249,7 +249,7 @@ enum FutureState {
   "rejected"
 };
 
-callback interface ResolverCallbacks {
+callback interface FutureResolver {
   // Directly resolves the Future with the passed value
   void accept(optional any value); // can throw AlreadyResolved
 
@@ -270,10 +270,10 @@ callback interface ResolverCallbacks {
   readonly attribute boolean isResolved;
 };
 
-callback InitCallback = void (ResolverCallbacks callbacks);
+callback FutureCallback = void (FutureResolver resolver);
 callback AnyCallback = any (optional any value);
 
-[Constructor(InitCallback init)]
+[Constructor(FutureCallback init)]
 interface Future {
   attribute readonly any            value;
   attribute readonly any            error;
@@ -281,18 +281,18 @@ interface Future {
 
   // Returns a Future whose fulfillment value will be the return value
   // from whichever of the callbacks is eventually invoked.
-  Future then(optional AnyCallback onaccept, optional AnyCallback onreject);
+  Future then(optional AnyCallback accept, optional AnyCallback reject);
 
-  // A shorthand for not registering only an onreject callback. Desugars to:
+  // A shorthand for not registering only an reject callback. Desugars to:
   //
-  //    Future.prototype.catch = function(onreject) {
-  //      return this.then(undefined, onreject);
+  //    Future.prototype.catch = function(reject) {
+  //      return this.then(undefined, reject);
   //    };
-  Future catch(optional AnyCallback onreject);
+  Future catch(optional AnyCallback reject);
 
   // An end-of-chain callback. Equivalent to .then() except it does not generate
   // a new Future and therefore ignores the return values of the callbacks.
-  void done(optional AnyCallback onaccept, optional AnyCallback onreject);
+  void done(optional AnyCallback accept, optional AnyCallback reject);
 
   // FIXME(slightlyoff):
   //  we don't have an extension point in the then() scheme that mirrors the
