@@ -249,25 +249,25 @@ enum FutureState {
   "rejected"
 };
 
-interface ResolverCallbacks {
+callback interface ResolverCallbacks {
   // Directly resolves the Future with the passed value
-  void accept(optional any value) raises(Error); // AlreadyResolved
+  void accept(optional any value); // can throw AlreadyResolved
 
   // Indirectly resolves the Future, chaining any passed Future's resolution
-  void resolve(optional any value) raises(Error); // AlreadyResolved
+  void resolve(optional any value); // can throw AlreadyResolved
 
   // Rejects the future
-  void reject(optional any error) raises(Error); // AlreadyResolved
+  void reject(optional any error); // can throw AlreadyResolved
 
   // Rejects with an error of: Error("Cancel")
-  void cancel()                   raises(Error); // AlreadyResolved
+  void cancel(); // can throw AlreadyResolved
 
   // Rejects with an error of: Error("Timeout")
-  void timeout()                  raises(Error); // AlreadyResolved
+  void timeout(); // can throw AlreadyResolved
 
   // false until (and unless) calling any of the above methods would raise an
   // AlreadyResolved exception
-  attribute readonly boolean isResolved; // FIXME(slightlyoff): getter?
+  readonly attribute boolean isResolved;
 };
 
 callback InitCallback = void (ResolverCallbacks callbacks);
