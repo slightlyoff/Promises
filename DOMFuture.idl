@@ -249,7 +249,7 @@ enum FutureState {
   "rejected"
 };
 
-callback interface FutureResolver {
+interface FutureResolver {
   // Directly resolves the Future with the passed value
   void accept(optional any value); // can throw AlreadyResolved
 
