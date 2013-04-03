@@ -61,7 +61,7 @@ futureInstance.then(aHandlerThatReturnsAFuture)
 futureInstance.done(onaccept, onreject);
 
 // Similarly, .catch() gives you access only to errors:
-futureInstance.catch(, onreject);
+futureInstance.catch(onreject);
 ```
 
 ## OK, So Why Futures For DOM?
