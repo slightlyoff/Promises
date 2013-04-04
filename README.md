@@ -3,6 +3,8 @@
 
 # DOM Futures
 
+## NOTE: The IDL hosted here is no longer canonical. [See the living DOM spec for the current version](http://dom.spec.whatwg.org/#futures).
+
 DOM Futures (aka "Promises") Design, currently in IDL. Also a p(r)ollyfill
 and re-worked APIs to take advantage of the new semantics.
 
