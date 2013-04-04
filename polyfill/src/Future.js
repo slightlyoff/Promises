@@ -11,6 +11,10 @@
 (function(global, browserGlobal) {
 "use strict";
 
+//
+// Async Utilities
+//
+
 // Borrowed from RSVP.js
 var async;
 
@@ -59,6 +63,10 @@ if (typeof process !== 'undefined' &&
   };
 }
 
+//
+// Object Model Utilities
+//
+
 // defineProperties utilities
 var _readOnlyProperty = function(v) {
     return {
@@ -79,6 +87,10 @@ var _method = function(v, e, c, w) {
 
 var _pseudoPrivate = function(v) { return _method(v, 0, 1, 0); };
 var _public = function(v) { return _method(v, 1); };
+
+//
+// Futures Utilities
+//
 
 var isThenable = function(it) {
   // FIXME(slightlyoff): need a better/standard definition!
@@ -109,6 +121,10 @@ var Backlog = function() {
   return bl;
 };
 
+//
+// Resolver Constuctor
+//
+
 var Resolver = function(future,
                         acceptCallbacks,
                         rejectCallbacks,
@@ -116,12 +132,6 @@ var Resolver = function(future,
                         setError,
                         setState) {
   var isResolved = false;
-
-  var assertUnresolved = function() {
-    if (isResolved) {
-      throw new AlreadyResolved("Already Resolved");
-    }
-  };
 
   var resolver = this;
   var accept = function(value) {
@@ -148,9 +158,14 @@ var Resolver = function(future,
   };
   var ifNotResolved = function(func) {
     return function(value) {
-      assertUnresolved();
-      isResolved = true;
-      func(value);
+      if (!isResolved) {
+        isResolved = true;
+        func(value);
+      } else {
+        if (typeof console != "undefined") {
+          console.error("Cannot resolve a Future mutliple times.");
+        }
+      }
     }
   };
 
@@ -166,12 +181,12 @@ var Resolver = function(future,
   this.cancel  = function() { resolver.reject(new Error("Cancel")); };
   this.timeout = function() { resolver.reject(new Error("Timeout")); };
 
-  Object.defineProperties(this, {
-    isResolved: _readOnlyProperty(function() { return isResolved; })
-  });
-
   setState("pending");
 };
+
+//
+// Future Constuctor
+//
 
 var Future = function(init) {
   var acceptCallbacks = new Backlog();
@@ -181,9 +196,9 @@ var Future = function(init) {
   var state = "pending";
 
   Object.defineProperties(this, {
-    value: _readOnlyProperty(function() { return value; }),
-    error: _readOnlyProperty(function() { return error; }),
-    state: _readOnlyProperty(function() { return state; }),
+    // value: _readOnlyProperty(function() { return value; }),
+    // error: _readOnlyProperty(function() { return error; }),
+    // state: _readOnlyProperty(function() { return state; }),
     _addAcceptCallback: _pseudoPrivate(
       function(cb) {
         acceptCallbacks.push(cb);
@@ -201,14 +216,21 @@ var Future = function(init) {
       }
     ),
   });
-  if (init) {
-    init(new Resolver(this,
-                      acceptCallbacks, rejectCallbacks,
-                      function(v) { value = v; },
-                      function(e) { error = e; },
-                      function(s) { state = s; }));
+  var r = new Resolver(this,
+                       acceptCallbacks, rejectCallbacks,
+                       function(v) { value = v; },
+                       function(e) { error = e; },
+                       function(s) { state = s; })
+  try {
+    if (init) { init(r); }
+  } catch(e) {
+    r.reject(e);
   }
 };
+
+//
+// Consructor
+//
 
 var isCallback = function(any) {
   return (typeof any == "function");
@@ -242,6 +264,10 @@ var addCallbacks = function(onaccept, onreject, scope) {
   return scope;
 };
 
+//
+// Prototype properties
+//
+
 Future.prototype = Object.create(null, {
   "then": _public(function(onaccept, onreject) {
     // The logic here is:
@@ -263,7 +289,35 @@ Future.prototype = Object.create(null, {
   }),
 });
 
+//
 // Statics
+//
+
+Future.isThenable = function(any) {
+  try {
+    var f = any.then;
+    if (typeof f == "function") {
+      return true;
+    }
+  } catch (e) { /*squelch*/ }
+  return false;
+};
+
+Future.some = function() {
+  // TODO(slightyoff)
+};
+
+Future.any = function() {
+  // TODO(slightyoff)
+};
+
+Future.when = function() {
+  // TODO(slightyoff)
+};
+
+//
+// Export
+//
 
 global.Future = Future;
 
