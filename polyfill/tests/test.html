@@ -12,6 +12,8 @@
     <meta charset="utf-8">
     <script src="../third_party/doh/runner_async.js"></script>
     <script>
+      this.runningUnderTest = true;
+
       var append = function(n, h) { (h||document.body).appendChild(n); return n; };
       var t = function(text) { return document.createTextNode(text); };
       var el = function(type, html, text) {

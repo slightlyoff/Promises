@@ -62,7 +62,7 @@ t.add("Future", [
 
   function no_arg_ctor() {
     var future = new Future();
-    t.is("pending", future.state);
+    t.is("pending", future._state);
   },
 
   function base_state() {
@@ -70,11 +70,11 @@ t.add("Future", [
     t.is(undefined, resolver);
     var future = new Future(function(r) { resolver = r; });
     t.t(future instanceof Future);
-    t.is(undefined, future.value);
-    t.is(undefined, future.error);
-    t.is("pending", future.state);
+    t.is(undefined, future._value);
+    t.is(undefined, future._error);
+    t.is("pending", future._state);
     t.is("object", typeof resolver);
-    t.is(false, resolver.isResolved);
+    t.is(false, resolver._isResolved);
   },
 
   async("Is delivery delayed?", function(d) {
@@ -87,13 +87,14 @@ t.add("Future", [
       d.callback(value);
     });
 
-    t.is(future.state, "pending");
+    t.is(future._state, "pending");
     t.is(false, resolved);
-    t.is(false, resolver.isResolved);
+    // t.is(false, resolver._isResolved);
     resolver.resolve(true);
-    // FIXME: what should future.value be here?
-    t.is("pending", future.state);
-    t.is(true, resolver.isResolved);
+    // FIXME: what should future._value be here?
+
+    t.is("pending", future._state);
+    t.is(true, resolver._isResolved);
   }),
 
   function done_returns_self() {
@@ -131,8 +132,8 @@ doh.add("Resolver", [
 
   function invariants() {
     new Future(function(r) {
-      t.is(r.isResolved, false)
-      var isResolvedPD = Object.getOwnPropertyDescriptor(r, "isResolved");
+      t.is(r._isResolved, false)
+      var isResolvedPD = Object.getOwnPropertyDescriptor(r, "_isResolved");
       t.is("function", typeof isResolvedPD.get);
       t.is("undefined", typeof isResolvedPD.set);
       t.t(isResolvedPD.enumerable);
@@ -151,14 +152,14 @@ doh.add("Resolver", [
     var future = new Future(function(r) {
       try {
         resolver = r;
-        t.f(r.isResolved);
+        t.f(r._isResolved);
         r.cancel();
-        t.t(resolver.isResolved);
+        t.t(resolver._isResolved);
       } catch(e) {
         d.errback(e);
       }
     });
-    t.is("pending", future.state);
+    t.is("pending", future._state);
     future.done(
       d.errback.bind(d),
       function(e) {
@@ -169,8 +170,8 @@ doh.add("Resolver", [
         d.callback();
       }
     );
-    t.t(resolver.isResolved);
-    t.is("pending", future.state);
+    t.t(resolver._isResolved);
+    t.is("pending", future._state);
   }),
 
   async("timeout", function(d) {
@@ -178,14 +179,14 @@ doh.add("Resolver", [
     var future = new Future(function(r) {
       try {
         resolver = r;
-        t.f(r.isResolved);
+        t.f(r._isResolved);
         r.timeout();
-        t.t(resolver.isResolved);
+        t.t(resolver._isResolved);
       } catch(e) {
         d.errback(e);
       }
     });
-    t.is("pending", future.state);
+    t.is("pending", future._state);
     future.done(
       d.errback.bind(d),
       function(e) {
@@ -195,8 +196,8 @@ doh.add("Resolver", [
         d.callback();
       }
     );
-    t.t(resolver.isResolved);
-    t.is("pending", future.state);
+    t.t(resolver._isResolved);
+    t.is("pending", future._state);
   }),
 
   async("resolve forwards errors", function(d) {
@@ -300,7 +301,7 @@ doh.add("Resolver", [
       r1 = r;
       r.resolve(f1);
     });
-    t.t(r1.isResolved);
+    t.t(r1._isResolved);
     d.callback();
   }),
 

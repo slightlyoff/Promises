@@ -8,8 +8,10 @@
 // FIXME(slightlyoff):
 //    - Document "npm test"
 //    - Change global name from "Future" to something less conflicty
-(function(global, browserGlobal) {
+(function(global, browserGlobal, underTest) {
 "use strict";
+
+underTest = !!underTest;
 
 //
 // Async Utilities
@@ -181,6 +183,12 @@ var Resolver = function(future,
   this.cancel  = function() { resolver.reject(new Error("Cancel")); };
   this.timeout = function() { resolver.reject(new Error("Timeout")); };
 
+  if (underTest) {
+    Object.defineProperties(this, {
+      _isResolved: _readOnlyProperty(function() { return isResolved; }),
+    });
+  }
+
   setState("pending");
 };
 
@@ -195,10 +203,15 @@ var Future = function(init) {
   var error;
   var state = "pending";
 
+  if (underTest) {
+    Object.defineProperties(this, {
+      _value: _readOnlyProperty(function() { return value; }),
+      _error: _readOnlyProperty(function() { return error; }),
+      _state: _readOnlyProperty(function() { return state; }),
+    });
+  }
+
   Object.defineProperties(this, {
-    // value: _readOnlyProperty(function() { return value; }),
-    // error: _readOnlyProperty(function() { return error; }),
-    // state: _readOnlyProperty(function() { return state; }),
     _addAcceptCallback: _pseudoPrivate(
       function(cb) {
         acceptCallbacks.push(cb);
@@ -321,4 +334,6 @@ Future.when = function() {
 
 global.Future = Future;
 
-})(this, (typeof window !== 'undefined') ? window : {});
+})(this,
+  (typeof window !== 'undefined') ? window : {},
+  this.runningUnderTest||false);
