@@ -53,8 +53,9 @@ interface Key {
  * 12
  **/
 interface CryptoOperation : Future {
-  Future process(ArrayBufferView buffer);
-  Future finish();
+  // Both process() and finish() return this for chaining.
+  CrytpoOperation process(ArrayBufferView buffer);
+  CrytpoOperation finish();
   void abort();
 
   readonly attribute Key? key;
