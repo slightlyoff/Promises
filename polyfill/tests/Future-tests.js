@@ -15,12 +15,30 @@ var log = console.log.bind(console);
 var rejected = function(reason) {
   return new Future(function(r) { r.reject(reason); });
 };
+var asyncRejected = function(reason) {
+  return new Future(function(r) {
+    setTimeout(r.reject.bind(r, reason), 0);
+  });
+};
+
 var accepted = function(value) {
   return new Future(function(r) { r.accept(value); });
 };
+var asyncAccepted = function(value) {
+  return new Future(function(r) {
+    setTimeout(r.accept.bind(r, value), 0);
+  });
+};
+
 var resolved = function(value) {
   return new Future(function(r) { r.resolve(value); });
 };
+var asyncResolved = function(value) {
+  return new Future(function(r) {
+    setTimeout(r.resolve.bind(r, value), 0);
+  });
+};
+
 var pending = function() {
   var resolver;
   var future = new Future(function(r) { resolver = r; });
@@ -305,6 +323,12 @@ doh.add("Resolver", [
     d.callback();
   }),
 
+  async("Throwing in a then callback rejects next.", function(d, done, e) {
+    accepted(5).then(function(v) {
+      throw new Error("Blarg!");
+    }).done(e, function(e){done();});
+  }),
+
   //
   // Inspired by the promises-tests repo.
   //
@@ -319,6 +343,88 @@ doh.add("Resolver", [
     function(d, done, error) {
       var nonFunction = 10;
       accepted(dummy).then(done, 10);
+    }
+  ),
+
+  async("Future.any fails on no values", function(d, done, error) {
+    Future.any().done(error, done);
+  }),
+
+  async("Future.any succeeds on undefined", function(d, done, error) {
+    Future.any(undefined).done(done, error);
+  }),
+
+  async("Future.any succeeds on raw values", function(d, done, error) {
+    Future.any("thinger", undefined, [], new String("blarg")).done(done, error);
+  }),
+
+  async("Future.any fails on rejected", function(d, done, error) {
+    Future.any(rejected()).done(error, done);
+  }),
+
+  async("Future.any succeeds on accepted", function(d, done, error) {
+    Future.any(accepted()).done(done, error);
+  }),
+
+  async("Future.any succeeds on asyncAccepted", function(d, done, error) {
+    Future.any(asyncAccepted()).done(done, error);
+  }),
+
+  async("Future.any succeeds on rejected + value", function(d, done, error) {
+    Future.any(rejected(), "thinger").done(done, error);
+  }),
+
+
+  async("Future.every fails on no values", function(d, done, error) {
+    Future.every().done(error, done);
+  }),
+
+  async("Future.every succeeds on undefined", function(d, done, error) {
+    Future.every(undefined).done(done, error);
+  }),
+
+  async("Future.every succeeds on raw values", function(d, done, error) {
+    Future.every("thinger", undefined, [], new String("blarg")).done(done, error);
+  }),
+
+  async("Future.every fails on rejected", function(d, done, error) {
+    Future.any(rejected()).done(error, done);
+  }),
+
+  async("Future.every succeeds on accepted", function(d, done, error) {
+    Future.every(accepted()).done(done, error);
+  }),
+
+  async("Future.every succeeds on asyncAccepted", function(d, done, error) {
+    Future.every(asyncAccepted()).done(done, error);
+  }),
+
+  async("Future.every fails on rejected + value", function(d, done, error) {
+    Future.every(rejected(), "thinger").done(error, done);
+  }),
+
+  async("Future.every fails on asyncRejected + value", function(d, done, error) {
+    Future.every(asyncRejected(), "thinger").done(error, done);
+  }),
+
+  async("Future.every forwards values", function(d, done, error) {
+    Future.every(
+      Future.every(asyncAccepted(5), "thinger").done(function(values) {
+        t.is([5, "thinger"], values);
+      }),
+      Future.every(asyncAccepted(5), "thinger").done(function(values) {
+        t.is([5, "thinger"], values);
+      })
+    ).done(done, error);
+  }),
+
+  async("Future.every forwards values multiple levels",
+    function(d, done, error) {
+      Future.every(asyncResolved(asyncResolved(5)), "thinger")
+        .done(function(values) {
+          t.is([5, "thinger"], values);
+          done();
+        }, error);
     }
   ),
 

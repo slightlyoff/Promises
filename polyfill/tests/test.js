@@ -13,7 +13,7 @@ filemap(
   files,
   "utf-8",
   function(contents) {
-    var buff = "this.runningUnderTest = true;";
+    var buff = "this.runningUnderTest = true;\n\n";
     files.forEach(function(n) {
       buff += contents[n];
     });

@@ -11,6 +11,10 @@
 (function(global, browserGlobal, underTest) {
 "use strict";
 
+// FIXME(slighltyoff):
+//  * aggregates + tests
+//  * check on fast-forwarding
+
 underTest = !!underTest;
 
 //
@@ -94,13 +98,14 @@ var _public = function(v) { return _method(v, 1); };
 // Futures Utilities
 //
 
-var isThenable = function(it) {
-  // FIXME(slightlyoff): need a better/standard definition!
-  var thenable = (
-    !!it &&
-    (typeof it.then == "function")
-  );
-  return thenable;
+var isThenable = function(any) {
+  try {
+    var f = any.then;
+    if (typeof f == "function") {
+      return true;
+    }
+  } catch (e) { /*squelch*/ }
+  return false;
 };
 
 var AlreadyResolved = function(name) {
@@ -306,26 +311,69 @@ Future.prototype = Object.create(null, {
 // Statics
 //
 
-Future.isThenable = function(any) {
-  try {
-    var f = any.then;
-    if (typeof f == "function") {
-      return true;
-    }
-  } catch (e) { /*squelch*/ }
-  return false;
+Future.isThenable = isThenable;
+
+var toFuture = function(valueOrFuture) {
+  if (Future.isThenable(valueOrFuture)) {
+    return valueOrFuture;
+  } else {
+    return new Future(function(r) {
+      r.resolve(valueOrFuture);
+    });
+  }
 };
 
+var toFutureList = function(list) {
+  return Array.prototype.slice.call(list).map(toFuture);
+};
+
+/*
 Future.some = function() {
-  // TODO(slightyoff)
+  // TODO(slightlyoff)
+  var futures = toFutureList(arguments);
+};
+*/
+
+Future.any = function(/*...futuresOrValues*/) {
+  var futures = toFutureList(arguments);
+  return new Future(function(r) {
+    if (!futures.length) {
+      r.reject("No futures passed to Future.any()");
+    } else {
+      var count = 0;
+      var accumulateFailures = function(e) {
+        count++;
+        if (count == futures.length) {
+          r.reject();
+        }
+      };
+      futures.forEach(function(f, idx) {
+        f.done(r.resolve, accumulateFailures);
+      });
+    }
+  });
 };
 
-Future.any = function() {
-  // TODO(slightyoff)
-};
-
-Future.when = function() {
-  // TODO(slightyoff)
+Future.every = function(/*...futuresOrValues*/) {
+  var futures = toFutureList(arguments);
+  return new Future(function(r) {
+    if (!futures.length) {
+      r.reject("No futures passed to Future.every()");
+    } else {
+      var values = new Array(futures.length);
+      var count = 0;
+      var accumulate = function(idx, v) {
+        count++;
+        values[idx] = v;
+        if (count == futures.length) {
+          r.resolve(values);
+        }
+      };
+      futures.forEach(function(f, idx) {
+        f.done(accumulate.bind(null, idx), r.reject);
+      });
+    }
+  });
 };
 
 //
