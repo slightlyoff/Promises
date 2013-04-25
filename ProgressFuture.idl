@@ -14,15 +14,15 @@
 //    progress(function(progressValue) { ... }).
 //    then(onaccept, onreject);
 
-interface ProgressResolverCallbacks extends ResolverCallbacks {
+interface ProgressFutureResolver extends FutureResolver {
   // Provide new progress which onprogress handlers will be notified of
   void progress(optional any progressValue);
 };
 
-callback ProgressInitCallback = void (ProgressResolverCallbacks callbacks);
+callback ProgressFutureInit = void (ProgressFutureResolver resolver);
 
-[Constructor(ProgressInitCallback init)]
+[Constructor(ProgressFutureInit init)]
 interface ProgressFuture : Future {
   // Returns the Future from which it was called ("this").
-  ProgressFuture  progress(optional EventHandler onprogress);
+  ProgressFuture progress(optional AnyCallback progressHandler);
 };
