@@ -356,35 +356,24 @@ var algorithmSign = {
   }
 };
 
-var keyGen = window.crypto.generateKey(algorithmKeyGen,
-                                       false, // extractable
-                                       ["sign"]);
+window.crypto.generateKey(algorithmKeyGen, false, ["sign"]).done(
+  function(key) {
+    var dataPart1 = convertPlainTextToArrayBufferView("hello,");
+    var dataPart2 = convertPlainTextToArrayBufferView(" world!");
+    // TODO: create example utility function that converts text -> ArrayBufferView
 
-keyGen.oncomplete = function(event) {
-  // Because we are not supplying data to .sign(), a multi-part
-  // CryptoOperation will be returned, which requires us to call .process()
-  // and .finish().
-  var signer = window.crypt.sign(algorithmSign, event.target.result.privateKey);
-  signer.oncomplete = function(event) {
-    console.log("The signature is: " + event.target.result);
-  }
-  signer.onerror = function(event) {
-    console.error("Unable to sign");
-  }
-
-  var dataPart1 = convertPlainTextToArrayBufferView("hello,");
-  var dataPart2 = convertPlainTextToArrayBufferView(" world!");
-  // TODO: create example utility function that converts text -> ArrayBufferView
-
-  signer.process(dataPart1);
-  signer.process(dataPart2);
-  signer.finish();
-};
-
-keyGen.onerror = function(event) {
-  console.error("Unable to generate a key.");
-};
-
+    // Because we are not supplying data to .sign(), a multi-part
+    // CryptoOperation will be returned, which requires us to call .process()
+    // and .finish().
+    window.crypt.sign(algorithmSign, key.privateKey)
+      .process(dataPart1)
+      .process(dataPart2)
+      .finish()
+      .done(console.log.bind(console, "The signature is: "),
+            console.error.bind(console, "Unable to sign"));
+  },
+  console.error.bind(console, "Unable to generate a key:")
+);
 **/
 
 /**************************************
@@ -409,24 +398,20 @@ var aesAlgorithmEncrypt = {
 };
 
 // Create a keygenerator to produce a one-time-use AES key to encrypt some data
-var cryptoKeyGen = window.crypto.generateKey(aesAlgorithmKeyGen,
-                                             false, // extractable
-                                             ["encrypt"]);
-
-cryptoKeyGen.oncomplete = function(event) {
-  // A new, random AES key has been generated.
-  var aesKey = event.target.result;
-
-  // Unlike the signing example, which showed multi-part encryption, here we
-  // will perform the entire AES operation in a single call.
-  var aesOp = window.crypto.encrypt(aesAlgorithmEncrypt, aesKey, clearDataArrayBufferView);
-  aesOp.oncomplete = function(event) {
-    // The clearData has been encrypted.
-    var ciphertext = event.target.result; // ArrayBufferView
-  };
-  aesOp.onerror = function(event) {
-    console.error("Unable to AES encrypt.");
-  };
-};
+window.crypto.generateKey(aesAlgorithmKeyGen, false, ["encrypt"]).done(
+  function(aesKey) { // A new, random AES key has been generated.
+    // Unlike the signing example, which showed multi-part encryption, here we
+    // will perform the entire AES operation in a single call.
+    window.crypto.encrypt(aesAlgorithmEncrypt,
+                          aesKey,
+                          clearDataArrayBufferView)
+    .done(
+      function(cipherText) {
+        console.log("Ciphertext is:", cipherText);
+      },
+      console.error.bind(console, "Unable to AES encrypt.");
+    );
+  }
+);
 
 **/
