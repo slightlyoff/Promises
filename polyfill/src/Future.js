@@ -376,6 +376,24 @@ Future.every = function(/*...futuresOrValues*/) {
   });
 };
 
+Future.accept = function(value) {
+  return new Future(function(r)) {
+    r.accept(value);
+  };
+};
+
+Future.resolve = function(value) {
+  return new Future(function(r)) {
+    r.resolve(value);
+  };
+};
+
+Future.reject = function(reason) {
+  return new Future(function(r)) {
+    r.reject(reason);
+  };
+};
+
 //
 // Export
 //
