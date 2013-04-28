@@ -453,18 +453,6 @@ doh.registerTests = function(/*String*/ group, /*Array*/ testArr){
 	}
 }
 
-// FIXME: move implementation to _browserRunner?
-doh.registerUrl = function(	/*String*/ group,
-								/*String*/ url,
-								/*Integer*/ timeout){
-	this.debug("ERROR:");
-	this.debug("\tNO registerUrl() METHOD AVAILABLE.");
-	// this._urls.push(url);
-}
-
-doh.registerString = function(group, str){
-}
-
 // FIXME: remove the doh.add alias SRTL.
 doh.register = doh.add = function(groupOrNs, testOrNull){
 	// summary:
@@ -673,9 +661,15 @@ doh._handleFailure = function(groupName, fixture, e){
 	this.debug(e);
 	if(fixture.runTest["toSource"]){
 		var ss = fixture.runTest.toSource();
-		this.debug("\tERROR IN:\n\t\t", ss);
+		this.debug("  ", fixture.name||ss);
+		if (e.stack) {
+			this.debug(e.stack);
+		}
 	}else{
-		this.debug("\tERROR IN:\n\t\t", fixture.runTest);
+		this.debug("  ", fixture.name||fixture.runTest);
+		if (e.stack) {
+			this.debug(e.stack);
+		}
 	}
 
 	if(e.rhinoException){
