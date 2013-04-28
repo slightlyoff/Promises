@@ -698,6 +698,7 @@ doh._runFixture = function(groupName, fixture){
 		// another test or group-level setUp function
 		fixture.group = tg;
 		// only execute the parts of the fixture we've got
+		doh.debug("TEST:", fixture.name);
 		if(fixture["setUp"]){ fixture.setUp(this); }
 		if(fixture["runTest"]){  // should we error out of a fixture doesn't have a runTest?
 			fixture.startTime = new Date();
