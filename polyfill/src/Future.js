@@ -317,18 +317,12 @@ Future.prototype = Object.create(null, {
 
 Future.isThenable = isThenable;
 
-var toFuture = function(valueOrFuture) {
-  return isThenable(valueOrFuture) ?
-            valueOrFuture : Future.resolve(valueOrFuture);
-};
-
 var toFutureList = function(list) {
-  return Array.prototype.slice.call(list).map(toFuture);
+  return Array.prototype.slice.call(list).map(Future.resolve);
 };
 
 Future.any = function(/*...futuresOrValues*/) {
   var futures = toFutureList(arguments);
-  // console.log(futures);
   return new Future(function(r) {
     if (!futures.length) {
       r.reject("No futures passed to Future.any()");
@@ -337,13 +331,11 @@ Future.any = function(/*...futuresOrValues*/) {
       var firstSuccess = function(value) {
         if (resolved) { return; }
         resolved = true;
-        // console.log("\tfirstSuccess(", value, ")");
         r.resolve(value);
       };
       var firstFailure = function(reason) {
         if (resolved) { return; }
         resolved = true;
-        // console.log("\tfirstFailure(", reason, ")");
         r.reject(reason);
       };
       futures.forEach(function(f, idx) {

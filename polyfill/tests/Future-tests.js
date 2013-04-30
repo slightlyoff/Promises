@@ -391,12 +391,18 @@ doh.add("Resolver", [
     Future.any(rejected(dummy), accepted("thinger")).done(error, done);
   }),
 
+  async("Future.any succeeds on pre-accepted + pre-rejected",
+    function(d, done, error) {
+      Future.any(acceptedSentinel, rejectedSentinel).done(done, error);
+    }
+  ),
+
   async("Future.any succeeds on value + rejected", function(d, done, error) {
-    Future.any(acceptedSentinel, rejectedSentinel).done(done, error);
+    Future.any("value", rejected("error")).done(done, error);
   }),
 
-  async("Future.any fails on rejected + value", function(d, done, error) {
-    Future.any(rejectedSentinel, "thinger").done(error, done);
+  async("Future.any succeeds on rejected + value", function(d, done, error) {
+    Future.any(rejectedSentinel, "thinger").done(done, error);
   }),
 
   // Future.every
