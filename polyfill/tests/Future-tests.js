@@ -12,27 +12,22 @@ var t = doh;
 // Trivial utilities.
 //
 var log = console.log.bind(console);
-var rejected = function(reason) {
-  return new Future(function(r) { r.reject(reason); });
-};
+
+var rejected = Future.reject;
 var asyncRejected = function(reason) {
   return new Future(function(r) {
     setTimeout(r.reject.bind(r, reason), 0);
   });
 };
 
-var accepted = function(value) {
-  return new Future(function(r) { r.accept(value); });
-};
+var accepted = Future.accept;
 var asyncAccepted = function(value) {
   return new Future(function(r) {
     setTimeout(r.accept.bind(r, value), 0);
   });
 };
 
-var resolved = function(value) {
-  return new Future(function(r) { r.resolve(value); });
-};
+var resolved = Future.resolve;
 var asyncResolved = function(value) {
   return new Future(function(r) {
     setTimeout(r.resolve.bind(r, value), 0);
@@ -52,6 +47,8 @@ var pending = function() {
 
 var dummy = { dummy: "dummy" };
 var sentinel = { sentinel: "sentinel" };
+var acceptedSentinel = accepted(sentinel);
+var rejectedSentinel = rejected(sentinel);
 
 var async = function(desc, test) {
   return {
@@ -312,6 +309,12 @@ doh.add("Resolver", [
     );
   }),
 
+  async("Futures forward through then", function(d, done, error) {
+    // FIXME(slightlyoff)
+    done();
+  }),
+
+
   async("isResolved is true while forwarding", function(d) {
     var f1 = pending();
     var r1;
@@ -346,6 +349,8 @@ doh.add("Resolver", [
     }
   ),
 
+  // Future.any
+
   async("Future.any fails on no values", function(d, done, error) {
     Future.any().done(error, done);
   }),
@@ -366,14 +371,35 @@ doh.add("Resolver", [
     Future.any(accepted()).done(done, error);
   }),
 
+  async("Future.any succeeds on accepted sentinel", function(d, done, error) {
+    Future.any(acceptedSentinel).done(done, error);
+  }),
+
   async("Future.any succeeds on asyncAccepted", function(d, done, error) {
     Future.any(asyncAccepted()).done(done, error);
   }),
 
-  async("Future.any succeeds on rejected + value", function(d, done, error) {
-    Future.any(rejected(), "thinger").done(done, error);
+  async("Future.any succeeds on value + accepted", function(d, done, error) {
+    Future.any("thinger", accepted(dummy)).done(done, error);
   }),
 
+  async("Future.any succeeds on accepted + rejected", function(d, done, error) {
+    Future.any(acceptedSentinel, rejectedSentinel).done(done, error);
+  }),
+
+  async("Future.any fails on rejected + accepted", function(d, done, error) {
+    Future.any(rejected(dummy), accepted("thinger")).done(error, done);
+  }),
+
+  async("Future.any succeeds on value + rejected", function(d, done, error) {
+    Future.any(acceptedSentinel, rejectedSentinel).done(done, error);
+  }),
+
+  async("Future.any fails on rejected + value", function(d, done, error) {
+    Future.any(rejectedSentinel, "thinger").done(error, done);
+  }),
+
+  // Future.every
 
   async("Future.every fails on no values", function(d, done, error) {
     Future.every().done(error, done);
@@ -428,6 +454,74 @@ doh.add("Resolver", [
     }
   ),
 
+  // Future.some
+
+  async("Future.some fails on no values", function(d, done, error) {
+    Future.some().done(error, done);
+  }),
+
+  async("Future.some succeeds on undefined", function(d, done, error) {
+    Future.some(undefined).done(done, error);
+  }),
+
+  async("Future.some succeeds on raw values", function(d, done, error) {
+    Future.some("thinger", undefined, [], new String("blarg")).done(done, error);
+  }),
+
+  async("Future.some fails on rejected", function(d, done, error) {
+    Future.some(rejected()).done(error, done);
+  }),
+
+  async("Future.some succeeds on accepted", function(d, done, error) {
+    Future.some(accepted()).done(done, error);
+  }),
+
+  async("Future.some succeeds on asyncAccepted", function(d, done, error) {
+    Future.some(asyncAccepted()).done(done, error);
+  }),
+
+  async("Future.some succeeds on rejected + accepted", function(d, done, error) {
+    Future.some(rejectedSentinel, acceptedSentinel).done(done, error);
+  }),
+
+  async("Future.some succeeds on value + rejected", function(d, done, error) {
+    Future.some("thinger", rejectedSentinel).done(done, error);
+  }),
+
+  // Future.accept
+
+  async("Future.accept is sane", function(d, done, error) {
+    Future.accept(sentinel).done(function(v) {
+      t.is(sentinel, v);
+      done();
+    }, error);
+  }),
+
+  // FIXME(slightlyoff): MOAR TESTS
+
+
+  // Future.resolve
+
+  async("Future.resolve is sane", function(d, done, error) {
+    Future.resolve(sentinel).done(function(v) {
+      t.is(sentinel, v);
+      done();
+    }, error);
+  }),
+
+  // FIXME(slightlyoff): MOAR TESTS
+
+
+  // Future.reject
+
+  async("Future.reject is sane", function(d, done, error) {
+    Future.reject(sentinel).done(error, function(reason) {
+      t.is(sentinel, reason);
+      done();
+    });
+  }),
+
+  // FIXME(slightlyoff): MOAR TESTS
 ]);
 
 })();

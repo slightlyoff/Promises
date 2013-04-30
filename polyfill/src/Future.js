@@ -41,10 +41,8 @@ if (typeof process !== 'undefined' &&
   var observer = new MutationObserver(function() {
     var toProcess = queue.slice();
     queue = [];
-
     toProcess.forEach(function(tuple) {
-      var callback = tuple[0], binding = tuple[1];
-      callback.call(binding);
+      tuple[0].call(tuple[1]);
     });
   });
 
@@ -142,16 +140,20 @@ var Resolver = function(future,
 
   var resolver = this;
   var accept = function(value) {
+    // console.log("queueing accept with:", value);
     async(function() {
       setState("accepted");
       setValue(value);
+      // console.log("accepting with:", value);
       acceptCallbacks.pump(value);
     });
   };
   var reject = function(reason) {
+    // console.log("queuing reject with:", reason);
     async(function() {
       setState("rejected");
       setError(reason);
+      // console.log("rejecting with:", reason);
       rejectCallbacks.pump(reason);
     });
   };
@@ -163,7 +165,7 @@ var Resolver = function(future,
     }
     accept(value);
   };
-  var ifNotResolved = function(func) {
+  var ifNotResolved = function(func, name) {
     return function(value) {
       if (!isResolved) {
         isResolved = true;
@@ -173,17 +175,17 @@ var Resolver = function(future,
           console.error("Cannot resolve a Future mutliple times.");
         }
       }
-    }
+    };
   };
 
   // Indirectly resolves the Future, chaining any passed Future's resolution
-  this.resolve = ifNotResolved(resolve);
+  this.resolve = ifNotResolved(resolve, "resolve");
 
   // Directly accepts the future, no matter what value's type is
-  this.accept = ifNotResolved(accept);
+  this.accept = ifNotResolved(accept, "accept");
 
   // Rejects the future
-  this.reject = ifNotResolved(reject);
+  this.reject = ifNotResolved(reject, "reject");
 
   this.cancel  = function() { resolver.reject(new Error("Cancel")); };
   this.timeout = function() { resolver.reject(new Error("Timeout")); };
@@ -219,6 +221,7 @@ var Future = function(init) {
   Object.defineProperties(this, {
     _addAcceptCallback: _pseudoPrivate(
       function(cb) {
+        // console.log("adding accept callback:", cb);
         acceptCallbacks.push(cb);
         if (state == "accepted") {
           acceptCallbacks.pump(value);
@@ -227,6 +230,7 @@ var Future = function(init) {
     ),
     _addRejectCallback: _pseudoPrivate(
       function(cb) {
+        // console.log("adding reject callback:", cb);
         rejectCallbacks.push(cb);
         if (state == "rejected") {
           rejectCallbacks.pump(error);
@@ -314,41 +318,36 @@ Future.prototype = Object.create(null, {
 Future.isThenable = isThenable;
 
 var toFuture = function(valueOrFuture) {
-  if (Future.isThenable(valueOrFuture)) {
-    return valueOrFuture;
-  } else {
-    return new Future(function(r) {
-      r.resolve(valueOrFuture);
-    });
-  }
+  return isThenable(valueOrFuture) ?
+            valueOrFuture : Future.resolve(valueOrFuture);
 };
 
 var toFutureList = function(list) {
   return Array.prototype.slice.call(list).map(toFuture);
 };
 
-/*
-Future.some = function() {
-  // TODO(slightlyoff)
-  var futures = toFutureList(arguments);
-};
-*/
-
 Future.any = function(/*...futuresOrValues*/) {
   var futures = toFutureList(arguments);
+  // console.log(futures);
   return new Future(function(r) {
     if (!futures.length) {
       r.reject("No futures passed to Future.any()");
     } else {
-      var count = 0;
-      var accumulateFailures = function(e) {
-        count++;
-        if (count == futures.length) {
-          r.reject();
-        }
+      var resolved = false;
+      var firstSuccess = function(value) {
+        if (resolved) { return; }
+        resolved = true;
+        // console.log("\tfirstSuccess(", value, ")");
+        r.resolve(value);
+      };
+      var firstFailure = function(reason) {
+        if (resolved) { return; }
+        resolved = true;
+        // console.log("\tfirstFailure(", reason, ")");
+        r.reject(reason);
       };
       futures.forEach(function(f, idx) {
-        f.done(r.resolve, accumulateFailures);
+        f.done(firstSuccess, firstFailure);
       });
     }
   });
@@ -376,22 +375,42 @@ Future.every = function(/*...futuresOrValues*/) {
   });
 };
 
+Future.some = function() {
+  var futures = toFutureList(arguments);
+  return new Future(function(r) {
+    if (!futures.length) {
+      r.reject("No futures passed to Future.some()");
+    } else {
+      var count = 0;
+      var accumulateFailures = function(e) {
+        count++;
+        if (count == futures.length) {
+          r.reject();
+        }
+      };
+      futures.forEach(function(f, idx) {
+        f.done(r.resolve, accumulateFailures);
+      });
+    }
+  });
+};
+
 Future.accept = function(value) {
-  return new Future(function(r)) {
+  return new Future(function(r) {
     r.accept(value);
-  };
+  });
 };
 
 Future.resolve = function(value) {
-  return new Future(function(r)) {
+  return new Future(function(r) {
     r.resolve(value);
-  };
+  });
 };
 
 Future.reject = function(reason) {
-  return new Future(function(r)) {
+  return new Future(function(r) {
     r.reject(reason);
-  };
+  });
 };
 
 //
