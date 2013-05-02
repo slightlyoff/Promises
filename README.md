@@ -87,7 +87,7 @@ if (document.readyState == "complete") {
 ```
 
 This is cumbersome and error-prone, not to mention ugly. IndexedDB's
-[`IDBRequest` class](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest) also sports a `readyState` property, but the values range from [1-2](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest#readyState_constants), not [0-4 as used in XHR](https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#Properties) or [strings as used for documents](http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#current-document-readiness). Making matters worse, the callback and event names don't even match! Clearly DOM needs a better way to do things.
+[`IDBRequest` class](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest) also supports a `readyState` property, but the values range from [1-2](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest#readyState_constants), not [0-4 as used in XHR](https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#Properties) or [strings as used for documents](http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#current-document-readiness). Making matters worse, the callback and event names don't even match! Clearly DOM needs a better way to do things.
 
 A uniform interface would allow us to manage our callbacks sanely across APIs:
 
@@ -151,7 +151,7 @@ done(function() {
 ```
 
 Futures can also be new'd up and used in your own APIs, making them a powerful
-abstraction for building asnchronous contracts for single valued operations;
+abstraction for building asynchronous contracts for single valued operations;
 basically any time you want to do some work asynchronously but only care about
 a single response value:
 
@@ -177,6 +177,6 @@ function fetchJSON(filename) {
 }
 
 // Now we can use the uniform Future API to reason about JSON fetches:
-fetchJSON("thinger.json").then(function(object) { ...} ,
+fetchJSON("thinger.json").then(function(object) { ... } ,
                                function(error) { ... });
 ```
