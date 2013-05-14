@@ -117,9 +117,9 @@ t.add("Future", [
     t.t(f.done() === f);
   },
 
-  function catch_returns_self() {
+  function catch_does_not_return_self() {
     var f = new Future();
-    t.t(f.catch() === f);
+    t.t(f.catch() !== f);
   },
 
   async("Values forward correctly", function(d) {

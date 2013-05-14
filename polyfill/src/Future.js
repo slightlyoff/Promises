@@ -303,11 +303,15 @@ Future.prototype = Object.create(null, {
                    wrap(onreject, r, "reject"), f);
     });
   }),
+  // FIXME(slightlyoff): it seems that returning self is a design error!
+  "catch": _public(function(onreject) {
+    var f = this;
+    return new Future(function(r) {
+      addCallbacks(null, wrap(onreject, r, "reject"), f);
+    });
+  }),
   "done": _public(function(onaccept, onreject) {
     return addCallbacks(onaccept, onreject, this);
-  }),
-  "catch": _public(function(onreject) {
-    return addCallbacks(null, onreject, this);
   }),
 });
 
