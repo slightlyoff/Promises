@@ -115,18 +115,18 @@
 //        return f;
 //      };
 //      doItAsync()
-//          .then(accept, reject)
-//          .then(acceptIntermediate)
-//          .done(acceptFinal);
+//          .then(fulfill, reject)
+//          .then(fulfillIntermediate)
+//          .done(fulfillFinal);
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
-//    which registers a handler for that particular disposition (accept &
+//    which registers a handler for that particular disposition (fulfill &
 //    reject). As in RSVP.js, the "onerror" function passed to done() is called
 //    here, logging the exception:
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
-//          .then(accept) // "accept" is not called, and we fast-forward
+//          .then(fulfill) // "fulfill" is not called, and we fast-forward
 //          .done(null, console.error.bind(console));
 //
 //    If the second call were to handle "error", the final callback would not
@@ -134,12 +134,12 @@
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
-//          .then(accept, console.error.bind(console)) // logs the error
+//          .then(fulfill, console.error.bind(console)) // logs the error
 //          .done(null, console.error.bind(console));    // does nothing
 //
 //  Return Value Sniffing, value/error Chaining, and Forwarding:
 //
-//    Like many other Promise systems, the callbacks for accept & error
+//    Like many other Promise systems, the callbacks for fulfill & error
 //    are used to resolve the auto-generated Promise returned from a call to
 //    then(). Below is the basic logic for then() callback return handling.
 //    Major features:
@@ -156,8 +156,8 @@
 //    Similar logic is in place when using the resolve() method to provide a
 //    value to resolve the Promise with; if a value passed to resolve() is a
 //    Promise, the value of the "local" future assumes the value of the "far"
-//    future. If it is any other value, it will be passed to accept(). The
-//    behavior of accept is to move the Promise to the "accepted" state and
+//    future. If it is any other value, it will be passed to fulfill(). The
+//    behavior of fulfill is to move the Promise to the "fulfilled" state and
 //    set .value to whatever value is passed (regardless of type).
 //
 //    Pseudo-code for resolve():
@@ -167,7 +167,7 @@
 //          value.then(this.resolve, this.reject);
 //          return;
 //        }
-//        this.accept(value);
+//        this.fulfill(value);
 //      }.bind(resolverInstance);
 //
 //  Delivery order:
@@ -183,7 +183,7 @@
 //
 //      var callbacks;
 //      var f = new Promise(function(c) { callbacks = c; });
-//      setTimeout(callbacks.accept.bind(callbacks, "Success!"), 1);
+//      setTimeout(callbacks.fulfill.bind(callbacks, "Success!"), 1);
 //      f.then(function(value) {
 //        // Just to illuminate the timing, we make sure that our next then()
 //        // call occurs well outside the current turn.
@@ -202,7 +202,7 @@
 //    The passed set of callbacks includes cancel() and timeout() functions.
 //    These are syntactic sugar that generate Error objects with known name
 //    values ("Cancel" and "Timeout", respectively). Handling these values is
-//    done through the usual reject handler of a Promise. Using only accept()
+//    done through the usual reject handler of a Promise. Using only fulfill()
 //    and reject() we can re-create these sugar functions easily:
 //
 //      var callbacks;
@@ -212,7 +212,7 @@
 //      var timeout = function() { callbacks.reject(new Error("Timeout")); };
 //
 //      // Register a reject handler that understands cancelation and timeout:
-//      f.then(accept, function(reason) {
+//      f.then(fulfill, function(reason) {
 //        switch(reason.name) {
 //          case "Cancel":
 //            // handle cancelation...
@@ -244,7 +244,7 @@
 
 interface PromiseResolver {
   // Directly resolves the Promise with the passed value
-  // void accept(optional any value); // can throw AlreadyResolved
+  // void fulfill(optional any value); // can throw AlreadyResolved
 
   // Indirectly resolves the Promise, chaining any passed Promise's resolution
   void resolve(optional any value); // can throw AlreadyResolved
@@ -272,7 +272,7 @@ interface Promise {
 
   // Returns a Promise whose fulfillment value will be the return value
   // from whichever of the callbacks is eventually invoked.
-  Promise then(optional AnyCallback accept, optional AnyCallback reject);
+  Promise then(optional AnyCallback fulfill, optional AnyCallback reject);
 
   // A shorthand for not registering only an reject callback. Desugars to:
   //
@@ -283,12 +283,12 @@ interface Promise {
 
   // An end-of-chain callback. Equivalent to .then() except it does not generate
   // a new Promise and therefore ignores the return values of the callbacks.
-  void done(optional AnyCallback accept, optional AnyCallback reject);
+  void done(optional AnyCallback fulfill, optional AnyCallback reject);
 
   /////////////////////////////////
   // Statics
 
-  static Promise accept(any value);
+  static Promise fulfill(any value);
   static Promise resolve(any value); // same as any(value)
   static Promise reject(any value);
 
