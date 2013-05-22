@@ -288,7 +288,7 @@ interface Promise {
   /////////////////////////////////
   // Statics
 
-  static Promise fulfill(any value);
+  // static Promise fulfill(any value);
   static Promise resolve(any value); // same as any(value)
   static Promise reject(any value);
 
