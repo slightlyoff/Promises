@@ -117,17 +117,17 @@
 //      doItAsync()
 //          .then(fulfill, reject)
 //          .then(fulfillIntermediate)
-//          .done(fulfillFinal);
+//          .finally(fulfillFinal);
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
 //    which registers a handler for that particular disposition (fulfill &
-//    reject). As in RSVP.js, the "onerror" function passed to done() is called
-//    here, logging the exception:
+//    reject). As in RSVP.js, the "onerror" function passed to finally() is
+//    called here, logging the exception:
 //
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
 //          .then(fulfill) // "fulfill" is not called, and we fast-forward
-//          .done(null, console.error.bind(console));
+//          .then(null, console.error.bind(console));
 //
 //    If the second call were to handle "error", the final callback would not
 //    receive an "error" unless it also rejected its Promise. e.g.:
@@ -135,7 +135,7 @@
 //      doItAsync()
 //          .then(function(){ throw new Error("spurious!"); })
 //          .then(fulfill, console.error.bind(console)) // logs the error
-//          .done(null, console.error.bind(console));    // does nothing
+//          .then(null, console.error.bind(console));    // does nothing
 //
 //  Return Value Sniffing, value/error Chaining, and Forwarding:
 //
@@ -238,13 +238,13 @@
 //
 //    No matter what approach is pursued, integration with developer tooling is
 //    key. Developer consoles SHOULD log un-caught errors from future chains.
-//    That is to say, if future.done(onresponse); is the only handler given for
+//    That is to say, if future.finally(onresponse); is the only handler given for
 //    a resolver which is eventually rejected, developer tools should log the
 //    unhandled error.
 
 interface PromiseResolver {
   // Directly resolves the Promise with the passed value
-  // void fulfill(optional any value); // can throw AlreadyResolved
+  void fulfill(optional any value); // can throw AlreadyResolved
 
   // Indirectly resolves the Promise, chaining any passed Promise's resolution
   void resolve(optional any value); // can throw AlreadyResolved
@@ -279,16 +279,22 @@ interface Promise {
   //    Promise.prototype.catch = function(reject) {
   //      return this.then(undefined, reject);
   //    };
+  //
   Promise catch(optional AnyCallback reject);
 
-  // An end-of-chain callback. Equivalent to .then() except it does not generate
-  // a new Promise and therefore ignores the return values of the callbacks.
-  void done(optional AnyCallback fulfill, optional AnyCallback reject);
+  // Like .then() called with the same function for both fulfill and reject
+  // callbacks.
+  //
+  //    Promise.prototype.finally = function(acceptAndReject) {
+  //      return this.then(acceptAndReject, acceptAndReject);
+  //    };
+  //
+  Promise finally(optional AnyCallback acceptAndReject);
 
   /////////////////////////////////
   // Statics
 
-  // static Promise fulfill(any value);
+  static Promise fulfill(any value);
   static Promise resolve(any value); // same as any(value)
   static Promise reject(any value);
 
