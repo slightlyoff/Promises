@@ -172,7 +172,7 @@ var Resolver = function(future,
         func(value);
       } else {
         if (typeof console != "undefined") {
-          console.error("Cannot resolve a Future mutliple times.");
+          console.error("Cannot resolve a Future multiple times.");
         }
       }
     };
