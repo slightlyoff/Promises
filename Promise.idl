@@ -283,10 +283,15 @@ interface Promise {
   Promise catch(optional AnyCallback reject);
 
   // Like .then() called with the same function for both fulfill and reject
-  // callbacks.
+  // callbacks, except it re-throws the passed exception.
   //
   //    Promise.prototype.finally = function(acceptAndReject) {
-  //      return this.then(acceptAndReject, acceptAndReject);
+  //      return this.then(
+  //        acceptAndReject,
+  //        function(reason) {
+  //          acceptAndReject(reason);
+  //          throw reason;
+  //      });
   //    };
   //
   Promise finally(optional AnyCallback acceptAndReject);
