@@ -1,4 +1,4 @@
-## NOTE: The IDL hosted here is now advisory. This repo hosts refactoring examples and designs, a high-fidelity polyfill, and rationale for this work. [See the living DOM spec for the current version if you are implementing Promises in a runtime.](http://dom.spec.whatwg.org/#futures).
+## NOTE: The IDL hosted here is now advisory. This repo hosts refactoring examples and designs, a high-fidelity polyfill, and rationale for this work. [See the living DOM spec for the current version](http://dom.spec.whatwg.org/#futures) if you are implementing Promises in a runtime.
 
 <img src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"
      align="right" alt="Promises/A+ logo, since DOMFutures are compatible" />
