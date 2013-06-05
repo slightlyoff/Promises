@@ -117,11 +117,11 @@
 //      doItAsync()
 //          .then(fulfill, reject)
 //          .then(fulfillIntermediate)
-//          .finally(fulfillFinal);
+//          .then(fulfillFinal);
 //
 //    Chaining fast-forwards un-handled values to the next item in the chain
 //    which registers a handler for that particular disposition (fulfill &
-//    reject). As in RSVP.js, the "onerror" function passed to finally() is
+//    reject). As in RSVP.js, the "onerror" function passed to then() is
 //    called here, logging the exception:
 //
 //      doItAsync()
@@ -238,7 +238,7 @@
 //
 //    No matter what approach is pursued, integration with developer tooling is
 //    key. Developer consoles SHOULD log un-caught errors from future chains.
-//    That is to say, if future.finally(onresponse); is the only handler given for
+//    That is to say, if future.then(onresponse); is the only handler given for
 //    a resolver which is eventually rejected, developer tools should log the
 //    unhandled error.
 
@@ -281,20 +281,6 @@ interface Promise {
   //    };
   //
   Promise catch(optional AnyCallback reject);
-
-  // Like .then() called with the same function for both fulfill and reject
-  // callbacks, except it re-throws the passed exception.
-  //
-  //    Promise.prototype.finally = function(acceptAndReject) {
-  //      return this.then(
-  //        acceptAndReject,
-  //        function(reason) {
-  //          acceptAndReject(reason);
-  //          throw reason;
-  //      });
-  //    };
-  //
-  Promise finally(optional AnyCallback acceptAndReject);
 
   /////////////////////////////////
   // Statics
