@@ -244,19 +244,13 @@
 
 interface PromiseResolver {
   // Directly resolves the Promise with the passed value
-  void fulfill(optional any value); // can throw AlreadyResolved
+  void fulfill(optional any value);
 
   // Indirectly resolves the Promise, chaining any passed Promise's resolution
-  void resolve(optional any value); // can throw AlreadyResolved
+  void resolve(optional any value);
 
   // Rejects the future
-  void reject(optional any error); // can throw AlreadyResolved
-
-  // Rejects with an error of: Error("Cancel")
-  void cancel(); // can throw AlreadyResolved
-
-  // Rejects with an error of: Error("Timeout")
-  void timeout(); // can throw AlreadyResolved
+  void reject(optional any error);
 
   // Note that implementations may keep internal state here, notably an
   // "isResovled" flag.
