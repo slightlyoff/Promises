@@ -4,11 +4,11 @@
   "author": "Alex Russell <slightlyoff@chromium.org>",
   "version" : "0.0.1",
   "license": "...",
-  "main": "./build/Future.js",
-  "url": "https://github.com/slightlyoff/DOMFuture",
+  "main": "./bin/Promise.min.js",
+  "url": "https://github.com/slightlyoff/Promises",
   "repository" : {
     "type" : "git",
-    "url" : "https://github.com/slightlyoff/DOMFuture.git"
+    "url" : "https://github.com/slightlyoff/Promises.git"
   },
   "contributors": [
     {
