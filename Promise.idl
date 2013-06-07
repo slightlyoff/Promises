@@ -163,7 +163,7 @@
 //    Pseudo-code for resolve():
 //
 //      resolverInstance.resolve = function(value) {
-//        if (isThenable(value)) {
+//        if (isBrandedAsPromise(value)) {
 //          value.then(this.resolve, this.reject);
 //          return;
 //        }
