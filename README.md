@@ -1,33 +1,35 @@
-## NOTE: The IDL hosted here is now advisory. This repo hosts refactoring examples and designs, a high-fidelity polyfill, and rationale for this work. [See the living DOM spec for the current version](http://dom.spec.whatwg.org/#futures) if you are implementing Promises in a runtime.
+#### NOTE: The IDL hosted here is now advisory. This repo hosts refactoring examples and designs, a high-fidelity polyfill, and rationale for this work. [See the living DOM spec for the current version](http://dom.spec.whatwg.org/#futures) if you are implementing Promises in a runtime.
 
 <img src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"
      align="right" alt="Promises/A+ logo, since DOMFutures are compatible" />
 
-# DOM Futures
+# DOM Promises
 
-DOM Futures (aka "Promises") Design, currently in IDL. Also a p(r)ollyfill
+A Promises Design for DOM, currently in IDL. Also a p(r)ollyfill
 and re-worked APIs to take advantage of the new semantics.
 
-## Futures? Promises? [I Don't Speak Your Crazy Moon Language](http://www.pigdog.org/auto/mr_bads_list/shortcolumn/1914.html).
+## Promises? [I Don't Speak Your Crazy Moon Language](http://www.pigdog.org/auto/mr_bads_list/shortcolumn/1914.html).
 
-A Future (aka "Promise") is an object that implements a standard contract for
+A Promise is an object that implements a standard contract for
 the results of an operation that may have already occurred or may happen in the
 future.
 
 There's a lot in that sentence that's meaningful, but the big ticket items are:
 
-  * Futures are a contract for _a single result_, either success or failure. If
+  * Promises are a contract for _a single result_, either success or failure. If
     you need to model something that happens multiple times, a single Future is
-    not the answer (try events or an iterator that creates a stream of Futures).
-  * Futures provide a mechanism for multiple parties to be informed of a value,
+    not the answer (try events or an iterator that creates a stream of Promises).
+  * Promises provide a mechanism for multiple parties to be informed of a value,
     much the same way many bits of code can hold a reference to a variable
     without knowing about each other.
-  * Futures aren't, in themselves valuable. Instead, they derive their value
+  * Promises aren't, in themselves notable. Instead, they derive their value
     through being _the one way_ to encapsulate potentially asynchronous return
     values.
 
-To do all of this without syntax support from the language, Futures must be
-objects with standardized methods. The current design provides a constructable class that allows end-user code to vend instances of `Future` from their own APIs as well as a few standard methods:
+To do all of this without syntax support from the language, Promises must be
+objects with standardized methods. The current design provides a constructable 
+class that allows end-user code to vend instances of `Future` from their own APIs 
+as well as a few standard methods:
 
 ```js
 // Accepts "accept" and "reject" callbacks, roughly the same thing as success
@@ -58,15 +60,11 @@ futureInstance.then(function(value) {
 futureInstance.then(aHandlerThatReturnsAFuture)
               .then(doSomethingAfterTheSecondCallback);
 
-// If you're not trying to chain, there's a .done() method which just lets you
-// listen in on the results:
-futureInstance.done(onaccept, onreject);
-
-// Similarly, .catch() gives you access only to errors:
+// .catch() gives you access only to errors:
 futureInstance.catch(onreject);
 ```
 
-## OK, So Why Futures For DOM?
+## OK, So Why Promises For DOM?
 
 To understand why DOM needs Futures, think about a few of the asynchronous APIs
 in DOM that return single values:
@@ -76,7 +74,9 @@ in DOM that return single values:
   * [IndexedDB](http://www.w3.org/TR/IndexedDB/)
   * [`onload`](https://developer.mozilla.org/en-US/docs/DOM/window.onload)
 
-There are some similarities today in how these APIs work. XHR and `onload` share the idea of a `readyState` property to let code detect if something has happened in the past, giving rise to logic like this:
+There are some similarities today in how these APIs work. XHR and `onload` share 
+the idea of a `readyState` property to let code detect if something has happened 
+in the past, giving rise to logic like this:
 
 ```js
 if (document.readyState == "complete") {
@@ -87,7 +87,13 @@ if (document.readyState == "complete") {
 ```
 
 This is cumbersome and error-prone, not to mention ugly. IndexedDB's
-[`IDBRequest` class](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest) also supports a `readyState` property, but the values range from [1-2](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest#readyState_constants), not [0-4 as used in XHR](https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#Properties) or [strings as used for documents](http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#current-document-readiness). Making matters worse, the callback and event names don't even match! Clearly DOM needs a better way to do things.
+[`IDBRequest` class](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest) 
+also supports a `readyState` property, but the values range from 
+[1-2](https://developer.mozilla.org/en-US/docs/IndexedDB/IDBRequest#readyState_constants), 
+not [0-4 as used in XHR](https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#Properties) 
+or [strings as used for documents](http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html#current-document-readiness). 
+Making matters worse, the callback and event names don't even match! Clearly 
+DOM needs a better way to do things.
 
 A uniform interface would allow us to manage our callbacks sanely across APIs:
 
@@ -116,11 +122,21 @@ libraries to interoperate based on a standard design.
 
 ## OK, But Aren't You Late To This Party?
 
-There's a [long, long history of Future and Promises](http://en.wikipedia.org/wiki/Futures_and_promises)
+There's a [long, long history of Promises](http://en.wikipedia.org/wiki/Futures_and_promises)
 both inside and outside JavaScript. Many other languages provide them via
-language syntax or standard library. Futures are such a common pattern inside
-JavaScript that nearly all major libraries provide some form of Future or
-Promise and vend them for many common operations which they wrap. There are many differences in terminology and use, but the core ideas are mostly the same be they [jQuery Deferreds](http://api.jquery.com/category/deferred-object/), [WinJS Promises](http://msdn.microsoft.com/en-us/library/windows/apps/br211867.aspx), [Dojo Deferreds or Promises](http://dojotoolkit.org/documentation/tutorials/1.6/promises/), [Cujo Promises](https://github.com/cujojs/when), [Q Promises](https://github.com/kriskowal/q/wiki/API-Reference), [RSVP Promises (used heavily in Ember)](https://github.com/tildeio/rsvp.js), or even in [Node Promises](https://github.com/kriszyp/node-promise). The diversity of implementations has led both to incompatibility and efforts to standardize, the most promising of which is the [Promises/A+ effort](https://github.com/promises-aplus/promises-spec), which of course differs slightly from [Promises/A](http://wiki.commonjs.org/wiki/Promises/A) and greatly from [other pseudo-standard variants proposed over the years](http://wiki.commonjs.org/wiki/Promises). Promises/A+ doesn't define all of the semantics needed for a full implementation, and if we assume DOM needs Futures/Promises, it will also need an answer to those questions. That's what this repository is about.
+language syntax or standard library. Promises are such a common pattern inside
+JavaScript that nearly all major libraries provide some form them and vend 
+them for many common operations which they wrap. There are  differences in 
+terminology and use, but the core ideas are mostly the same be they 
+[jQuery Deferreds](http://api.jquery.com/category/deferred-object/), 
+[WinJS Promises](http://msdn.microsoft.com/en-us/library/windows/apps/br211867.aspx), 
+[Dojo Deferreds or Promises](http://dojotoolkit.org/documentation/tutorials/1.6/promises/), 
+[Cujo Promises](https://github.com/cujojs/when), 
+[Q Promises](https://github.com/kriskowal/q/wiki/API-Reference), [RSVP Promises (used heavily in Ember)](https://github.com/tildeio/rsvp.js), or even in [Node Promises](https://github.com/kriszyp/node-promise). The diversity of implementations has led both to incompatibility and efforts to standardize, the most promising of which is the [Promises/A+ effort](https://github.com/promises-aplus/promises-spec), which of course differs slightly from [Promises/A](http://wiki.commonjs.org/wiki/Promises/A) and greatly from [other pseudo-standard variants proposed over the years](http://wiki.commonjs.org/wiki/Promises). 
+
+Promises/A+ doesn't define all of the semantics needed for a full implementation, 
+and if we assume DOM needs Promises, it will also need an answer to those 
+questions. That's what this repository is about.
 
 ## More Examples
 
@@ -150,15 +166,15 @@ done(function() {
 });
 ```
 
-Futures can also be new'd up and used in your own APIs, making them a powerful
+Promises can also be new'd up and used in your own APIs, making them a powerful
 abstraction for building asynchronous contracts for single valued operations;
 basically any time you want to do some work asynchronously but only care about
 a single response value:
 
 ```js
 function fetchJSON(filename) {
-  // Return a Future that represents the fetch:
-  return new Future(function(resolver){
+  // Return a Promise that represents the fetch:
+  return new Promise(function(resolver){
     // The resolver is how a Future is satisfied. It has reject(), accept(),
     // and resolve() methods that your code can use to inform listeners with:
     var xhr = new XMLHttpRequest();
