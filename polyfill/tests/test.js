@@ -4,8 +4,8 @@ var _eval = require("eval");
 
 var files = [
   "../third_party/doh/runner_async.js",
-  "../src/Future.js",
-  "Future-tests.js"
+  "../src/Promise.js",
+  "Promise-tests.js"
 ];
 
 // ...jsut as soon as we re-build the naive load() method

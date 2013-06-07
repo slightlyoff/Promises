@@ -7,7 +7,7 @@ var promisesAplusTests = require("../third_party/promises-tests");
 var fs = require("fs");
 var _eval = require("eval");
 
-var Future = _eval(fs.readFileSync("../src/Future.js", "utf-8") +
+var Future = _eval(fs.readFileSync("../src/Promise.js", "utf-8") +
                                    "module.exports = Future;");
 
 var adapter = {
