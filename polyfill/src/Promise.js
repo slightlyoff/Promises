@@ -7,7 +7,7 @@
 
 // FIXME(slightlyoff):
 //    - Document "npm test"
-//    - Change global name from "Future" to something less conflicty
+//    - Change global name from "Promise" to something less conflicty
 (function(global, browserGlobal, underTest) {
 "use strict";
 
@@ -26,7 +26,7 @@ var async;
 
 var MutationObserver = browserGlobal.MutationObserver ||
                        browserGlobal.WebKitMutationObserver;
-var Future;
+var Promise;
 
 if (typeof process !== 'undefined' &&
   {}.toString.call(process) === '[object process]') {
@@ -93,7 +93,7 @@ var _pseudoPrivate = function(v) { return _method(v, 0, 1, 0); };
 var _public = function(v) { return _method(v, 1); };
 
 //
-// Futures Utilities
+// Promises Utilities
 //
 
 var isThenable = function(any) {
@@ -131,7 +131,7 @@ var Backlog = function() {
 //
 
 var Resolver = function(future,
-                        acceptCallbacks,
+                        fulfillCallbacks,
                         rejectCallbacks,
                         setValue,
                         setError,
@@ -139,13 +139,13 @@ var Resolver = function(future,
   var isResolved = false;
 
   var resolver = this;
-  var accept = function(value) {
-    // console.log("queueing accept with:", value);
+  var fulfill = function(value) {
+    // console.log("queueing fulfill with:", value);
     async(function() {
-      setState("accepted");
+      setState("fulfilled");
       setValue(value);
-      // console.log("accepting with:", value);
-      acceptCallbacks.pump(value);
+      // console.log("fulfilling with:", value);
+      fulfillCallbacks.pump(value);
     });
   };
   var reject = function(reason) {
@@ -159,11 +159,10 @@ var Resolver = function(future,
   };
   var resolve = function(value) {
     if (isThenable(value)) {
-      var funcName =  (typeof value.done == "function") ? "done" : "then";
-      value[funcName](resolve, reject);
+      value.then(resolve, reject);
       return;
     }
-    accept(value);
+    fulfill(value);
   };
   var ifNotResolved = function(func, name) {
     return function(value) {
@@ -172,17 +171,17 @@ var Resolver = function(future,
         func(value);
       } else {
         if (typeof console != "undefined") {
-          console.error("Cannot resolve a Future multiple times.");
+          console.error("Cannot resolve a Promise multiple times.");
         }
       }
     };
   };
 
-  // Indirectly resolves the Future, chaining any passed Future's resolution
+  // Indirectly resolves the Promise, chaining any passed Promise's resolution
   this.resolve = ifNotResolved(resolve, "resolve");
 
-  // Directly accepts the future, no matter what value's type is
-  this.accept = ifNotResolved(accept, "accept");
+  // Directly fulfills the future, no matter what value's type is
+  this.fulfill = ifNotResolved(fulfill, "fulfill");
 
   // Rejects the future
   this.reject = ifNotResolved(reject, "reject");
@@ -200,11 +199,11 @@ var Resolver = function(future,
 };
 
 //
-// Future Constuctor
+// Promise Constuctor
 //
 
-var Future = function(init) {
-  var acceptCallbacks = new Backlog();
+var Promise = function(init) {
+  var fulfillCallbacks = new Backlog();
   var rejectCallbacks = new Backlog();
   var value;
   var error;
@@ -221,10 +220,10 @@ var Future = function(init) {
   Object.defineProperties(this, {
     _addAcceptCallback: _pseudoPrivate(
       function(cb) {
-        // console.log("adding accept callback:", cb);
-        acceptCallbacks.push(cb);
-        if (state == "accepted") {
-          acceptCallbacks.pump(value);
+        // console.log("adding fulfill callback:", cb);
+        fulfillCallbacks.push(cb);
+        if (state == "fulfilled") {
+          fulfillCallbacks.pump(value);
         }
       }
     ),
@@ -239,7 +238,7 @@ var Future = function(init) {
     ),
   });
   var r = new Resolver(this,
-                       acceptCallbacks, rejectCallbacks,
+                       fulfillCallbacks, rejectCallbacks,
                        function(v) { value = v; },
                        function(e) { error = e; },
                        function(s) { state = s; })
@@ -276,9 +275,9 @@ var wrap = function(callback, resolver, disposition) {
   };
 };
 
-var addCallbacks = function(onaccept, onreject, scope) {
-  if (isCallback(onaccept)) {
-    scope._addAcceptCallback(onaccept);
+var addCallbacks = function(onfulfill, onreject, scope) {
+  if (isCallback(onfulfill)) {
+    scope._addAcceptCallback(onfulfill);
   }
   if (isCallback(onreject)) {
     scope._addRejectCallback(onreject);
@@ -290,28 +289,24 @@ var addCallbacks = function(onaccept, onreject, scope) {
 // Prototype properties
 //
 
-Future.prototype = Object.create(null, {
-  "then": _public(function(onaccept, onreject) {
+Promise.prototype = Object.create(null, {
+  "then": _public(function(onfulfill, onreject) {
     // The logic here is:
-    //    We return a new Future whose resolution merges with the return from
-    //    onaccept() or onerror(). If onaccept() returns a Future, we forward
+    //    We return a new Promise whose resolution merges with the return from
+    //    onfulfill() or onerror(). If onfulfill() returns a Promise, we forward
     //    the resolution of that future to the resolution of the returned
-    //    Future.
+    //    Promise.
     var f = this;
-    return new Future(function(r) {
-      addCallbacks(wrap(onaccept, r, "resolve"),
+    return new Promise(function(r) {
+      addCallbacks(wrap(onfulfill, r, "resolve"),
                    wrap(onreject, r, "reject"), f);
     });
   }),
-  // FIXME(slightlyoff): it seems that returning self is a design error!
   "catch": _public(function(onreject) {
     var f = this;
-    return new Future(function(r) {
+    return new Promise(function(r) {
       addCallbacks(null, wrap(onreject, r, "reject"), f);
     });
-  }),
-  "done": _public(function(onaccept, onreject) {
-    return addCallbacks(onaccept, onreject, this);
   }),
 });
 
@@ -319,17 +314,17 @@ Future.prototype = Object.create(null, {
 // Statics
 //
 
-Future.isThenable = isThenable;
+Promise.isThenable = isThenable;
 
-var toFutureList = function(list) {
-  return Array.prototype.slice.call(list).map(Future.resolve);
+var toPromiseList = function(list) {
+  return Array.prototype.slice.call(list).map(Promise.resolve);
 };
 
-Future.any = function(/*...futuresOrValues*/) {
-  var futures = toFutureList(arguments);
-  return new Future(function(r) {
+Promise.any = function(/*...futuresOrValues*/) {
+  var futures = toPromiseList(arguments);
+  return new Promise(function(r) {
     if (!futures.length) {
-      r.reject("No futures passed to Future.any()");
+      r.reject("No futures passed to Promise.any()");
     } else {
       var resolved = false;
       var firstSuccess = function(value) {
@@ -343,17 +338,17 @@ Future.any = function(/*...futuresOrValues*/) {
         r.reject(reason);
       };
       futures.forEach(function(f, idx) {
-        f.done(firstSuccess, firstFailure);
+        f.then(firstSuccess, firstFailure);
       });
     }
   });
 };
 
-Future.every = function(/*...futuresOrValues*/) {
-  var futures = toFutureList(arguments);
-  return new Future(function(r) {
+Promise.every = function(/*...futuresOrValues*/) {
+  var futures = toPromiseList(arguments);
+  return new Promise(function(r) {
     if (!futures.length) {
-      r.reject("No futures passed to Future.every()");
+      r.reject("No futures passed to Promise.every()");
     } else {
       var values = new Array(futures.length);
       var count = 0;
@@ -365,17 +360,17 @@ Future.every = function(/*...futuresOrValues*/) {
         }
       };
       futures.forEach(function(f, idx) {
-        f.done(accumulate.bind(null, idx), r.reject);
+        f.then(accumulate.bind(null, idx), r.reject);
       });
     }
   });
 };
 
-Future.some = function() {
-  var futures = toFutureList(arguments);
-  return new Future(function(r) {
+Promise.some = function() {
+  var futures = toPromiseList(arguments);
+  return new Promise(function(r) {
     if (!futures.length) {
-      r.reject("No futures passed to Future.some()");
+      r.reject("No futures passed to Promise.some()");
     } else {
       var count = 0;
       var accumulateFailures = function(e) {
@@ -385,26 +380,26 @@ Future.some = function() {
         }
       };
       futures.forEach(function(f, idx) {
-        f.done(r.resolve, accumulateFailures);
+        f.then(r.resolve, accumulateFailures);
       });
     }
   });
 };
 
-Future.accept = function(value) {
-  return new Future(function(r) {
-    r.accept(value);
+Promise.fulfill = function(value) {
+  return new Promise(function(r) {
+    r.fulfill(value);
   });
 };
 
-Future.resolve = function(value) {
-  return new Future(function(r) {
+Promise.resolve = function(value) {
+  return new Promise(function(r) {
     r.resolve(value);
   });
 };
 
-Future.reject = function(reason) {
-  return new Future(function(r) {
+Promise.reject = function(reason) {
+  return new Promise(function(r) {
     r.reject(reason);
   });
 };
@@ -413,7 +408,7 @@ Future.reject = function(reason) {
 // Export
 //
 
-global.Future = Future;
+global.Promise = Promise;
 
 })(this,
   (typeof window !== 'undefined') ? window : {},

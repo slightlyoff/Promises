@@ -7,21 +7,21 @@ var promisesAplusTests = require("../third_party/promises-tests");
 var fs = require("fs");
 var _eval = require("eval");
 
-var Future = _eval(fs.readFileSync("../src/Promise.js", "utf-8") +
-                                   "module.exports = Future;");
+var Promise = _eval(fs.readFileSync("../src/Promise.js", "utf-8") +
+                                   "module.exports = Promise;");
 
 var adapter = {
   rejected: function(reason) {
-    return new Future(function(r) { r.reject(reason); });
+    return new Promise(function(r) { r.reject(reason); });
   },
 
   fulfilled: function(value) {
-    return new Future(function(r) { r.accept(value); });
+    return new Promise(function(r) { r.fulfill(value); });
   },
 
   pending: function() {
     var resolver;
-    var future = new Future(function(r) { resolver = r; });
+    var future = new Promise(function(r) { resolver = r; });
     return {
       promise: future,
       fulfill: function (value) {
