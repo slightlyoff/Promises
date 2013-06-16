@@ -403,6 +403,61 @@ doh.add("Resolver", [
     Promise.any(rejectedSentinel, "thinger").then(then, error);
   }),
 
+  // Promise.atLeast
+
+  async("Promise.atLeast fails on no values", function(d, then, error) {
+    Promise.atLeast().then(error, then);
+  }),
+
+  async("Promise.atLeast succeeds on undefined", function(d, then, error) {
+    Promise.atLeast(1,undefined).then(then, error);
+  }),
+
+  async("Promise.atLeast succeeds on raw values", function(d, then, error) {
+    Promise.atLeast(2,"thinger", undefined, [], new String("blarg")).then(then, error);
+  }),
+
+  async("Promise.atLeast fails on rejected", function(d, then, error) {
+    Promise.atLeast(1,rejected(),rejected()).then(error, then);
+  }),
+
+  async("Promise.atLeast succeeds on fulfilled", function(d, then, error) {
+    Promise.atLeast(1,fulfilled()).then(then, error);
+  }),
+
+  async("Promise.atLeast succeeds on asyncAccepted", function(d, then, error) {
+    Promise.atLeast(1,asyncAccepted(),asyncAccepted()).then(then, error);
+  }),
+
+  async("Promise.atLeast fails on rejected + value", function(d, then, error) {
+    Promise.atLeast(1,rejected(), "thinger").then(error, then);
+  }),
+
+  async("Promise.atLeast fails on asyncRejected + value", function(d, then, error) {
+    Promise.atLeast(1,asyncRejected(), "thinger").then(error, then);
+  }),
+
+  async("Promise.atLeast forwards values", function(d, then, error) {
+    Promise.atLeast(
+      Promise.atLeast(2,asyncAccepted(5), "thinger", "other").then(function(values) {
+        t.is([5, "thinger"], values);
+      }),
+      Promise.atLeast(2,asyncAccepted(5), "thinger", "other").then(function(values) {
+        t.is([5, "thinger"], values);
+      })
+    ).then(then, error);
+  }),
+
+  async("Promise.atLeast forwards values multiple levels",
+    function(d, then, error) {
+      Promise.atLeast(2,asyncResolved(asyncResolved(5)), "thinger", "other")
+        .then(function(values) {
+          t.is([5, "thinger"], values);
+          then();
+        }, error);
+    }
+  ),
+
   // Promise.every
 
   async("Promise.every fails on no values", function(d, then, error) {

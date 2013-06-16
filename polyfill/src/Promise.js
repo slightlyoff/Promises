@@ -344,10 +344,12 @@ Promise.any = function(/*...futuresOrValues*/) {
   });
 };
 
-Promise.every = function(/*...futuresOrValues*/) {
-  var futures = toPromiseList(arguments);
+Promise.atLeast = function(n/*, ...futuresOrValues*/) {
+  var futures = toPromiseList(Array.prototype.slice.call(arguments,1));
   return new Promise(function(r) {
-    if (!futures.length) {
+    if (n>futures.length) {
+      r.reject("The promise to fullfill can\'t exceed promises count'");
+    } else if (!futures.length) {
       r.reject("No futures passed to Promise.every()");
     } else {
       var values = new Array(futures.length);
@@ -355,7 +357,7 @@ Promise.every = function(/*...futuresOrValues*/) {
       var accumulate = function(idx, v) {
         count++;
         values[idx] = v;
-        if (count == futures.length) {
+        if (count == n) {
           r.resolve(values);
         }
       };
@@ -366,24 +368,14 @@ Promise.every = function(/*...futuresOrValues*/) {
   });
 };
 
-Promise.some = function() {
-  var futures = toPromiseList(arguments);
-  return new Promise(function(r) {
-    if (!futures.length) {
-      r.reject("No futures passed to Promise.some()");
-    } else {
-      var count = 0;
-      var accumulateFailures = function(e) {
-        count++;
-        if (count == futures.length) {
-          r.reject();
-        }
-      };
-      futures.forEach(function(f, idx) {
-        f.then(r.resolve, accumulateFailures);
-      });
-    }
-  });
+Promise.every = function(/*...futuresOrValues*/) {
+  return Promise.atLeast.apply(this,
+		[arguments.length].concat(toPromiseList(arguments)));
+};
+
+Promise.some = function(/*...futuresOrValues*/) {
+  return Promise.atLeast.apply(this,
+		[1].concat(toPromiseList(arguments)));
 };
 
 Promise.fulfill = function(value) {
