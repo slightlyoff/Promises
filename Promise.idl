@@ -288,4 +288,5 @@ interface Promise {
   // FIXME: Should be "all"?
   static Promise every(any... values);
   static Promise some(any... values);
+  static Promise atLeast(int n, any... values);
 };
