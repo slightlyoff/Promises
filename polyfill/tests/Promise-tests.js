@@ -418,7 +418,7 @@ doh.add("Resolver", [
   }),
 
   async("Promise.every fails on rejected", function(d, then, error) {
-    Promise.any(rejected()).then(error, then);
+    Promise.every(rejected()).then(error, then);
   }),
 
   async("Promise.every succeeds on fulfilled", function(d, then, error) {
