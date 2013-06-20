@@ -305,7 +305,8 @@ Promise.prototype = Object.create(null, {
   "catch": _public(function(onreject) {
     var f = this;
     return new Promise(function(r) {
-      addCallbacks(null, wrap(onreject, r, "reject"), f);
+      addCallbacks(wrap(undefined, r, "resolve"),
+                   wrap(onreject, r, "reject"), f);
     });
   }),
 });
