@@ -1,0 +1,30 @@
+{
+  "name": "dom-promises",
+  "version": "0.0.1",
+  "description": "DOM Promises Polyfill",
+  "keywords": [
+    "promises",
+    "futures",
+    "dom promises",
+    "dom futures",
+    "polyfill"
+  ],
+  "bugs": "https://github.com/slightlyoff/Promises/issues",
+  "licenses": [
+    {
+      "type": "Apache License, Version 2.0",
+      "url": "https://github.com/slightlyoff/Promises/blob/master/polyfill/LICENSE"
+    }
+  ],
+  "author": {
+    "name": "Alex Russell",
+    "email": "slightlyoff@chromium.org",
+    "url": "http://infrequently.org/"
+  },
+  "main": "./polyfill/bin/Promise.min.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/slightlyoff/Promises.git"
+  },
+  "dependencies": {}
+}
