@@ -175,7 +175,7 @@ a single response value:
 function fetchJSON(filename) {
   // Return a Promise that represents the fetch:
   return new Promise(function(resolver){
-    // The resolver is how a Future is satisfied. It has reject(), accept(),
+    // The resolver is how a Promise is satisfied. It has reject(), fulfill(),
     // and resolve() methods that your code can use to inform listeners with:
     var xhr = new XMLHttpRequest();
     xhr.open("GET", filename, true);
@@ -183,7 +183,7 @@ function fetchJSON(filename) {
     xhr.onreadystatechange = function() {
       if (xhr.readyState == 4) {
         try {
-          resolver.accept(JSON.parse(xhr.responseText));
+          resolver.resolve(JSON.parse(xhr.responseText));
         } catch(e) {
           resolver.reject(e);
         }
